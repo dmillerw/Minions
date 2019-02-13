@@ -1,0 +1,49 @@
+buildscript {
+    repositories {
+        jcenter()
+        maven { url = "http://files.minecraftforge.net/maven" }
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
+    }
+}
+
+apply plugin: 'java'
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+apply plugin: 'net.minecraftforge.gradle.forge'
+
+ext.buildnumber=""
+if (System.getenv().BUILD_NUMBER) {
+    ext.buildnumber = ".B" + System.getenv().BUILD_NUMBER
+}
+
+version = "${minecraft_version}-${mod_version}${buildnumber}"
+group = "dmillerw.minions"
+archivesBaseName = "Minions"
+
+minecraft {
+    runDir = "run"
+    mappings = "${mappings_version}"
+    version = "${minecraft_version}-${forge_version}"
+	
+    replaceIn "Reference.java"
+    replace "%MOD_VERSION%", "${mod_version}"
+    replace "%FORGE_VERSION%", "${forge_version}"
+}
+
+processResources{
+    inputs.property "version", project.version
+    inputs.property "mcversion", project.minecraft.version
+
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+                
+        expand 'version':project.version, 'mcversion':project.minecraft.version
+    }
+        
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+    }
+}
