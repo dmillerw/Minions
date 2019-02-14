@@ -14,7 +14,7 @@ public class ClientProxy extends CommonProxy {
     public void preInit(FMLPreInitializationEvent event) {
         super.preInit(event);
 
-        RenderingRegistry.registerEntityRenderingHandler(EntityMinion.class, manager -> new RenderMinion(Minecraft.getMinecraft().getRenderManager()));
+        RenderingRegistry.registerEntityRenderingHandler(EntityMinion.class, RenderMinion::new);
     }
 
     @Override

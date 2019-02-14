@@ -3,6 +3,8 @@ package me.dmillerw.minions.proxy;
 import me.dmillerw.minions.Minions;
 import me.dmillerw.minions.entity.EntityMinion;
 import me.dmillerw.minions.lib.ModInfo;
+import me.dmillerw.minions.tasks.TaskRegistry;
+import me.dmillerw.minions.tasks.definition.TaskCollectItems;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
@@ -13,6 +15,8 @@ public class CommonProxy implements IProxy {
 
     @Override
     public void preInit(FMLPreInitializationEvent event) {
+        TaskRegistry.registerTask(new TaskCollectItems());
+
         EntityRegistry.registerModEntity(
                 new ResourceLocation(ModInfo.ID, "minion"),
                 EntityMinion.class,
