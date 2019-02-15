@@ -1,16 +1,23 @@
 package me.dmillerw.minions.entity;
 
+import me.dmillerw.minions.client.gui.GuiMinion;
 import me.dmillerw.minions.entity.ai.EntityAIExecuteTask;
 import me.dmillerw.minions.tasks.TaskInstance;
+import me.dmillerw.minions.util.MinionType;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.EntityLiving;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
+import net.minecraft.util.EnumHand;
 import net.minecraft.util.EnumHandSide;
 import net.minecraft.world.World;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +27,8 @@ public class EntityMinion extends EntityLiving {
     private static final List<ItemStack> ARMOUR = new ArrayList<>();
 
     private static final DataParameter<String> SKIN = EntityDataManager.createKey(EntityMinion.class, DataSerializers.STRING);
-    private static final DataParameter<ItemStack> HELDITEM = EntityDataManager.createKey(EntityMinion.class, DataSerializers.ITEM_STACK);
+    private static final DataParameter<ItemStack> HELD_ITEM = EntityDataManager.createKey(EntityMinion.class, DataSerializers.ITEM_STACK);
+    private static final DataParameter<String> TYPE = EntityDataManager.createKey(EntityMinion.class, DataSerializers.STRING);
 
     public TaskInstance taskInstance;
 
@@ -33,7 +41,8 @@ public class EntityMinion extends EntityLiving {
         super.entityInit();
 
         dataManager.register(SKIN, "");
-        dataManager.register(HELDITEM, ItemStack.EMPTY);
+        dataManager.register(HELD_ITEM, ItemStack.EMPTY);
+        dataManager.register(TYPE, MinionType.LABORER.name());
     }
 
     @Override
@@ -58,6 +67,26 @@ public class EntityMinion extends EntityLiving {
 
     public void setSkin(String skin) {
         dataManager.set(SKIN, skin);
+    }
+
+    public MinionType getMinionType() {
+        return MinionType.fromString(dataManager.get(TYPE));
+    }
+
+    public void setMinionType(MinionType type) {
+        dataManager.set(TYPE, type.getString());
+    }
+
+    @SideOnly(Side.CLIENT)
+    @Override
+    protected boolean processInteract(EntityPlayer player, EnumHand hand) {
+        if (player.getHeldItem(hand).isEmpty()) {
+            if (player.world.isRemote) {
+                Minecraft.getMinecraft().displayGuiScreen(new GuiMinion(this));
+            }
+        }
+
+        return player.getHeldItem(hand).isEmpty();
     }
 
     @Override
@@ -89,13 +118,13 @@ public class EntityMinion extends EntityLiving {
 
     @Override
     public ItemStack getItemStackFromSlot(EntityEquipmentSlot slotIn) {
-        return slotIn == EntityEquipmentSlot.MAINHAND ? dataManager.get(HELDITEM) : ItemStack.EMPTY;
+        return slotIn == EntityEquipmentSlot.MAINHAND ? dataManager.get(HELD_ITEM) : ItemStack.EMPTY;
     }
 
     @Override
     public void setItemStackToSlot(EntityEquipmentSlot slotIn, ItemStack stack) {
         if (slotIn == EntityEquipmentSlot.MAINHAND)
-            dataManager.set(HELDITEM, stack.copy());
+            dataManager.set(HELD_ITEM, stack.copy());
     }
 
     @Override

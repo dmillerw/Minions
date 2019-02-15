@@ -1,9 +1,8 @@
-package me.dmillerw.minions.tasks.definition;
+package me.dmillerw.minions.tasks;
 
 import com.google.common.collect.Lists;
 import me.dmillerw.minions.entity.EntityMinion;
 import me.dmillerw.minions.entity.ai.AIHelper;
-import me.dmillerw.minions.tasks.*;
 import me.dmillerw.minions.util.Area;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.init.Items;
@@ -16,11 +15,14 @@ import java.util.UUID;
 
 public class TaskCollectItems extends TaskDefinition  {
 
-    public static final Parameter<Area> HARVEST_AREA = Parameter.newParameter("harvest_area", Parameter.AREA);
-    public static final Parameter<BlockPos> DROPOFF_POINT = Parameter.newParameter("dropoff_point", Parameter.BLOCKPOS);
+    public static final Parameter<Area> HARVEST_AREA = Parameter.newParameter("harvest_area", Parameter.AREA, Area.ORIGIN);
+    public static final Parameter<BlockPos> DROPOFF_POINT = Parameter.newParameter("dropoff_point", Parameter.BLOCKPOS, BlockPos.ORIGIN);
 
     public TaskCollectItems() {
-        super(TaskRegistry.COLLECT_ITEMS);
+        super(TaskRegistry.COLLECT_ITEMS, "Collect Items");
+
+        addParameter(HARVEST_AREA);
+        addParameter(DROPOFF_POINT);
     }
 
     @Override
@@ -69,7 +71,7 @@ public class TaskCollectItems extends TaskDefinition  {
                     minion.setItemStackToSlot(EntityEquipmentSlot.MAINHAND, ItemStack.EMPTY);
                 } else {
                     // Move towards it otherwise
-                    minion.getNavigator().tryMoveToXYZ(dropoffPoint.getX(), dropoffPoint.getY(), dropoffPoint.getZ(), 0.8);
+                    aiHelper.moveToPosition(dropoffPoint);
                 }
             } else {
                 // If we have a target, go after it
@@ -79,7 +81,7 @@ public class TaskCollectItems extends TaskDefinition  {
                         minion.setItemStackToSlot(EntityEquipmentSlot.MAINHAND, targetItem.getItem().copy());
                         targetItem.setDead();
                     } else {
-                        minion.getNavigator().tryMoveToEntityLiving(targetItem, 0.8);
+                        aiHelper.moveToEntity(targetItem);
                     }
                 } else {
                     if (itemScanDelay == 0) {
@@ -106,7 +108,7 @@ public class TaskCollectItems extends TaskDefinition  {
 
                     // Otherwise, are we in the harvest area?
                     if (!area.isEntityInsideOf(minion)) {
-                        minion.getNavigator().tryMoveToXYZ(area.getCenter().getX(), area.getCenter().getY(), area.getCenter().getZ(), 0.8);
+                        aiHelper.moveToPosition(area.getCenter());
                     }
                 }
             }

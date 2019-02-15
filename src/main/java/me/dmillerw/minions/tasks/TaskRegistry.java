@@ -1,5 +1,6 @@
 package me.dmillerw.minions.tasks;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 
 import java.util.Map;
@@ -16,5 +17,9 @@ public class TaskRegistry {
 
     public static TaskDefinition getTask(String key) {
         return registeredTasks.get(key);
+    }
+
+    public static ImmutableList<TaskDefinition> getAllTasks() {
+        return ImmutableList.copyOf(registeredTasks.values());
     }
 }

@@ -1,7 +1,7 @@
 package me.dmillerw.minions.tasks;
 
+import io.netty.buffer.ByteBuf;
 import me.dmillerw.minions.util.Area;
-import me.dmillerw.minions.util.NBTUtils;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagInt;
@@ -12,68 +12,96 @@ import java.util.Objects;
 
 public class Parameter<T> {
 
-    public static <T, N extends NBTBase> Parameter<T> newParameter(String id, ParameterSerializer<T, N> serializer) {
-        return new Parameter<>(id, serializer);
+    public static <T> Parameter<T> newParameter(String id, ParameterAdapter<T> serializer, T defaultValue) {
+        return new Parameter<T>(id, serializer, defaultValue, false);
     }
 
-    public static <T, N extends NBTBase> Parameter<T> newOptionalParameter(String id, ParameterSerializer<T, N> serializer) {
-        return new Parameter<>(id, serializer, true);
+    public static abstract class ParameterAdapter<T> {
+
+        public abstract T readParameterFromBuffer(ByteBuf buffer);
+
+        public abstract void writeParameterToBuffer(ByteBuf buffer, T param);
+
+        public abstract NBTBase writeParameterToNbtTag(T param);
+
+        public abstract T readParameterFromNbtTag(NBTBase tag);
     }
 
-    public static abstract class ParameterSerializer<T, N extends NBTBase> {
-
-        public abstract N paramToNbt(T param);
-
-        public abstract T nbtToParam(N tag);
-    }
-
-    public static final ParameterSerializer<Integer, NBTTagInt> INT = new ParameterSerializer<Integer, NBTTagInt>() {
+    public static final ParameterAdapter<Integer> INT = new ParameterAdapter<Integer>() {
         @Override
-        public NBTTagInt paramToNbt(Integer param) {
+        public Integer readParameterFromBuffer(ByteBuf buffer) {
+            return buffer.readInt();
+        }
+
+        @Override
+        public void writeParameterToBuffer(ByteBuf buffer, Integer param) {
+            buffer.writeInt(param);
+        }
+
+        @Override
+        public NBTBase writeParameterToNbtTag(Integer param) {
             return new NBTTagInt(param);
         }
 
         @Override
-        public Integer nbtToParam(NBTTagInt tag) {
-            return tag.getInt();
+        public Integer readParameterFromNbtTag(NBTBase tag) {
+            return ((NBTTagInt) tag).getInt();
         }
     };
 
-    public static final ParameterSerializer<Area, NBTTagCompound> AREA = new ParameterSerializer<Area, NBTTagCompound>() {
+    public static final ParameterAdapter<Area> AREA = new ParameterAdapter<Area>() {
         @Override
-        public NBTTagCompound paramToNbt(Area param) {
+        public Area readParameterFromBuffer(ByteBuf buffer) {
+            return Area.fromBuffer(buffer);
+        }
+
+        @Override
+        public void writeParameterToBuffer(ByteBuf buffer, Area param) {
+            param.writeToBuffer(buffer);
+        }
+
+        @Override
+        public NBTBase writeParameterToNbtTag(Area param) {
             return param.toNbt();
         }
 
         @Override
-        public Area nbtToParam(NBTTagCompound tag) {
-            return Area.fromNbt(tag);
+        public Area readParameterFromNbtTag(NBTBase tag) {
+            return Area.fromNbt((NBTTagCompound) tag);
         }
     };
 
-    public static final ParameterSerializer<BlockPos, NBTTagLong> BLOCKPOS = new ParameterSerializer<BlockPos, NBTTagLong>() {
+    public static final ParameterAdapter<BlockPos> BLOCKPOS = new ParameterAdapter<BlockPos>() {
         @Override
-        public NBTTagLong paramToNbt(BlockPos param) {
+        public BlockPos readParameterFromBuffer(ByteBuf buffer) {
+            return BlockPos.fromLong(buffer.readLong());
+        }
+
+        @Override
+        public void writeParameterToBuffer(ByteBuf buffer, BlockPos param) {
+            buffer.writeLong(param.toLong());
+        }
+
+        @Override
+        public NBTBase writeParameterToNbtTag(BlockPos param) {
             return new NBTTagLong(param.toLong());
         }
 
         @Override
-        public BlockPos nbtToParam(NBTTagLong tag) {
-            return BlockPos.fromLong(tag.getLong());
+        public BlockPos readParameterFromNbtTag(NBTBase tag) {
+            return BlockPos.fromLong(((NBTTagLong) tag).getLong());
         }
     };
 
     public final String id;
-    public final ParameterSerializer<T, ?> serializer;
+    public final ParameterAdapter<T> adapter;
+    public final T defaultValue;
     public final boolean optional;
 
-    private Parameter(String id, ParameterSerializer<T, ?> serializer) {
-        this(id, serializer, false);
-    }
-
-    private Parameter(String id, ParameterSerializer<T, ?> serializer, boolean optional) {
+    private Parameter(String id, ParameterAdapter<T> adapter, T defaultValue, boolean optional) {
         this.id = id;
-        this.serializer = serializer;
+        this.adapter = adapter;
+        this.defaultValue = defaultValue;
         this.optional = optional;
     }
 

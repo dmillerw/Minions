@@ -1,5 +1,6 @@
 package me.dmillerw.minions.util;
 
+import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -10,11 +11,17 @@ import java.util.List;
 
 public class Area {
 
+    public static final Area ORIGIN = new Area(BlockPos.ORIGIN, BlockPos.ORIGIN);
+
+    public static Area fromBuffer(ByteBuf buffer) {
+        return new Area(BlockPos.fromLong(buffer.readLong()), BlockPos.fromLong(buffer.readLong()));
+    }
+
     public static Area fromNbt(NBTTagCompound tagCompound) {
         return new Area(BlockPos.fromLong(tagCompound.getLong("start")), BlockPos.fromLong(tagCompound.getLong("end")));
     }
-
     public final BlockPos startPos;
+
     public final BlockPos endPos;
 
     private final BlockPos center;
@@ -41,6 +48,11 @@ public class Area {
                 entity.posZ >= startPos.getZ() &&
                 entity.posX <= endPos.getX() &&
                 entity.posZ <= endPos.getZ());
+    }
+
+    public void writeToBuffer(ByteBuf buffer) {
+        buffer.writeLong(startPos.toLong());
+        buffer.writeLong(endPos.toLong());
     }
 
     public NBTTagCompound toNbt() {

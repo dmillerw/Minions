@@ -11,6 +11,7 @@ import net.minecraftforge.fml.common.registry.GameRegistry;
 public class ModItems {
 
     public static final ItemDebug debug = null;
+    public static final ItemWorkbook workbook = null;
 
     @Mod.EventBusSubscriber
     public static class RegistrationHandler {
@@ -18,7 +19,8 @@ public class ModItems {
         @SubscribeEvent
         public static void addItems(RegistryEvent.Register<Item> event) {
             event.getRegistry().registerAll(
-                    new ItemDebug().setRegistryName(ModInfo.ID, "debug")
+                    new ItemDebug().setRegistryName(ModInfo.ID, "debug"),
+                    new ItemWorkbook().setRegistryName(ModInfo.ID, "workbook")
             );
         }
     }

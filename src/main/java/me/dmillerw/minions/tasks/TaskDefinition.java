@@ -14,13 +14,16 @@ import java.util.UUID;
 public abstract class TaskDefinition {
 
     public final String id;
+    public final String name;
+
     private Map<String, Parameter> keyToParameterMap = Maps.newHashMap();
     private Set<Parameter> parameters = Sets.newHashSet();
 
     private ItemStack icon;
 
-    public TaskDefinition(String id) {
+    public TaskDefinition(String id, String name) {
         this.id = id;
+        this.name = name;
         this.icon = getIcon();
     }
 
