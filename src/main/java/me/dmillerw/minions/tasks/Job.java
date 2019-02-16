@@ -1,5 +1,6 @@
 package me.dmillerw.minions.tasks;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.netty.buffer.ByteBuf;
@@ -8,6 +9,7 @@ import me.dmillerw.minions.util.MinionType;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -18,13 +20,26 @@ import java.util.UUID;
  */
 public class Job {
 
+    public static Job[] dummyJobs(int count) {
+        List<Job> job = Lists.newArrayList();
+        for (int i=0; i<count; i++) {
+            job.add(dummyJob(i));
+        }
+        return job.toArray(new Job[0]);
+    }
+
+    public static Job dummyJob(int i) {
+        TaskDefinition task = TaskRegistry.getAllTasks().get(0);
+        return new Job(UUID.randomUUID(), "Dummy Job #" + i, task, MinionType.ANYONE, 0, new ParameterMap(task));
+    }
+
     public static Job fromBuffer(ByteBuf buffer) {
         UUID uuid = new UUID(buffer.readLong(), buffer.readLong());
         String title = ByteBufUtils.readUTF8String(buffer);
         TaskDefinition task = TaskRegistry.getTask(ByteBufUtils.readUTF8String(buffer));
         MinionType type = MinionType.fromString(ByteBufUtils.readUTF8String(buffer));
-        ParameterMap parameters = ParameterMap.fromBuffer(task, buffer);
         int priority = buffer.readInt();
+        ParameterMap parameters = ParameterMap.fromBuffer(task, buffer);
 
         return new Job(uuid, title, task, type, priority, parameters);
     }
@@ -71,10 +86,15 @@ public class Job {
     public void writeToBuffer(ByteBuf buffer) {
         buffer.writeLong(uuid.getMostSignificantBits());
         buffer.writeLong(uuid.getLeastSignificantBits());
+
         ByteBufUtils.writeUTF8String(buffer, title);
+
         ByteBufUtils.writeUTF8String(buffer, task.id);
+
         ByteBufUtils.writeUTF8String(buffer, type.getString());
+
         buffer.writeInt(priority);
+
         parameters.writeToBuffer(buffer);
     }
 

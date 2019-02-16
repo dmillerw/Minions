@@ -1,29 +1,32 @@
 package me.dmillerw.minions.client.gui;
 
 import com.google.common.collect.Lists;
-import me.dmillerw.minions.client.gui.element.GuiCheckbox;
+import me.dmillerw.minions.client.gui.element.*;
 import me.dmillerw.minions.lib.ModInfo;
+import me.dmillerw.minions.network.PacketHandler;
+import me.dmillerw.minions.network.server.SUpdateJob;
 import me.dmillerw.minions.tasks.Job;
+import me.dmillerw.minions.tasks.Parameter;
 import me.dmillerw.minions.tasks.ParameterMap;
 import me.dmillerw.minions.tasks.TaskDefinition;
+import me.dmillerw.minions.util.Area;
 import me.dmillerw.minions.util.MinionType;
-import net.minecraft.client.audio.PositionedSoundRecord;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.init.SoundEvents;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 
-public class GuiModifyJob extends GuiScreen {
+public class GuiModifyJob extends GuiBase {
 
-    private static final ResourceLocation INVENTORY_BACKGROUND = new ResourceLocation(ModInfo.ID, "textures/gui/modify_job.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation(ModInfo.ID, "textures/gui/modify_job.png");
 
     private static final int FONT_COLOR = 0xff544c3b;
-    
+
     private static final int X_SIZE = 256;
     private static final int Y_SIZE = 204;
 
@@ -43,24 +46,30 @@ public class GuiModifyJob extends GuiScreen {
 
     private static final int BOX_PER_PAGE = LIST_H / BOX_HEIGHT;
 
-    private static final int BUTTON_OK_X = 142;
-    private static final int BUTTON_OK_Y = 203;
+    private static final int PARAM_BOX_X = 99;
+    private static final int PARAM_BOX_Y = 18;
+    private static final int PARAM_BOX_W = 153;
+    private static final int PARAM_BOX_H = 137;
+
+
+    private static final int BUTTON_OK_X = 242;
+    private static final int BUTTON_OK_Y = 191;
     private static final int BUTTON_OK_W = 11;
     private static final int BUTTON_OK_H = 10;
     private static final int BUTTON_OK_U = 7;
-    private static final int BUTTON_OK_V = 216;
+    private static final int BUTTON_OK_V = 204;
 
-    private static final int BUTTON_CANCEL_X = 128;
-    private static final int BUTTON_CANCEL_Y = 203;
+    private static final int BUTTON_CANCEL_X = 229;
+    private static final int BUTTON_CANCEL_Y = 191;
     private static final int BUTTON_CANCEL_W = 11;
     private static final int BUTTON_CANCEL_H = 10;
     private static final int BUTTON_CANCEL_U = 18;
-    private static final int BUTTON_CANCEL_V = 216;
+    private static final int BUTTON_CANCEL_V = 204;
 
-    private int guiLeft;
-    private int guiTop;
+    private GuiWrappedTextField nameField;
 
-    private GuiTextField nameField;
+    private GuiTexturedButton buttonOk;
+    private GuiTexturedButton buttonCancel;
 
     private GuiCheckbox checkboxAnyone;
     private GuiCheckbox checkboxLaborer;
@@ -72,7 +81,7 @@ public class GuiModifyJob extends GuiScreen {
 
     private int paramsScrollIndex = 0;
     private float paramsScrollProgress = 0;
-    private int selectedParamIndex = -1;
+    private int selectedParamIndex = 0;
 
     private List<String> parameters = Lists.newArrayList();
 
@@ -81,6 +90,11 @@ public class GuiModifyJob extends GuiScreen {
     }
 
     public GuiModifyJob(Job job) {
+        super(TEXTURE);
+
+        this.xSize = X_SIZE;
+        this.ySize = Y_SIZE;
+
         this.job = job;
 
         parameters.addAll(job.parameters.getKeys());
@@ -89,57 +103,59 @@ public class GuiModifyJob extends GuiScreen {
     public void initGui() {
         super.initGui();
 
-        this.guiLeft = (this.width - X_SIZE) / 2;
-        this.guiTop = (this.height - Y_SIZE) / 2;
+        this.nameField = new GuiWrappedTextField(this, SEARCH_X, SEARCH_Y, 100, 22)
+                .setFocused(true)
+                .setDrawBackground(false);
 
-        this.nameField = new GuiTextField(0, fontRenderer, guiLeft + SEARCH_X, guiTop + SEARCH_Y, 100, 22);
-        this.nameField.setFocused(true);
-        this.nameField.setEnableBackgroundDrawing(false);
+        this.buttonOk = new GuiTexturedButton(this, BUTTON_OK_X, BUTTON_OK_Y, BUTTON_OK_W, BUTTON_OK_H)
+                .setTooltip("OK")
+                .setUVMapper((b) -> Pair.of(BUTTON_OK_U, BUTTON_OK_V));
 
-        //TODO: Better gui widgets, seriously
-        this.checkboxAnyone = new GuiCheckbox(guiLeft + 99, guiTop + 159, 11, 10, "Anyone", FONT_COLOR, false)
-                .setResourceLocation(INVENTORY_BACKGROUND)
-                .setUV(29, 204, 40, 204);
-        this.checkboxLaborer = new GuiCheckbox(guiLeft + 99, guiTop + 174, 11, 10, "Laborer", FONT_COLOR, false)
-                .setResourceLocation(INVENTORY_BACKGROUND)
-                .setUV(29, 204, 40, 204);
-        this.checkboxFarmer = new GuiCheckbox(guiLeft + 99, guiTop + 189, 11, 10, "Farmer", FONT_COLOR, false)
-                .setResourceLocation(INVENTORY_BACKGROUND)
-                .setUV(29, 204, 40, 204);
-        this.checkboxBuilder = new GuiCheckbox(guiLeft + 159, guiTop + 159, 11, 10, "Builder", FONT_COLOR, false)
-                .setResourceLocation(INVENTORY_BACKGROUND)
-                .setUV(29, 204, 40, 204);
-        this.checkboxForester = new GuiCheckbox(guiLeft + 159, guiTop + 174, 11, 10, "Forester", FONT_COLOR, false)
-                .setResourceLocation(INVENTORY_BACKGROUND)
-                .setUV(29, 204, 40, 204);
+        this.buttonCancel = new GuiTexturedButton(this, BUTTON_CANCEL_X, BUTTON_CANCEL_Y, BUTTON_CANCEL_W, BUTTON_CANCEL_H)
+                .setTooltip("CANCEL")
+                .setUVMapper((b) -> Pair.of(BUTTON_CANCEL_U, BUTTON_CANCEL_V));
+
+        final Pair<Integer, Integer> checkboxInactive = Pair.of(29, 204);
+        final Pair<Integer, Integer> checkboxActive = Pair.of(40, 204);
+
+        final Function<GuiCheckbox, Pair<Integer, Integer>> uvMapper = (checkbox) -> checkbox.isChecked ? checkboxActive : checkboxInactive;
+
+        this.checkboxAnyone = new GuiCheckbox(this, 99, 159, 11, 10, "Anyone", FONT_COLOR, false)
+                .setUVMapper(uvMapper).onClick((c) -> setMinionType(MinionType.ANYONE));
+
+        this.checkboxLaborer = new GuiCheckbox(this, 99, 174, 11, 10, "Laborer", FONT_COLOR, false)
+                .setUVMapper(uvMapper).onClick((c) -> setMinionType(MinionType.LABORER));
+
+        this.checkboxFarmer = new GuiCheckbox(this, 99, 189, 11, 10, "Farmer", FONT_COLOR, false)
+                .setUVMapper(uvMapper).onClick((c) -> setMinionType(MinionType.FARMER));
+
+        this.checkboxBuilder = new GuiCheckbox(this, 159, 159, 11, 10, "Builder", FONT_COLOR, false)
+                .setUVMapper(uvMapper).onClick((c) -> setMinionType(MinionType.BUILDER));
+
+        this.checkboxForester = new GuiCheckbox(this, 159, 174, 11, 10, "Forester", FONT_COLOR, false)
+                .setUVMapper(uvMapper).onClick((c) -> setMinionType(MinionType.FORESTER));
 
         if (job != null) {
             nameField.setText(job.title);
-            nameField.setCursorPosition(0);
+            nameField.setCursorPosition(job.title.length());
 
             setMinionType(job.type);
         } else {
             setMinionType(MinionType.ANYONE);
         }
+
+        updateParameterProperties();
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        scroll();
+    protected void drawForeground(int mouseX, int mouseY) {
+        int x = guiLeft;
+        int y = guiTop;
 
-        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-        this.mc.getTextureManager().bindTexture(INVENTORY_BACKGROUND);
-        int x = this.guiLeft;
-        int y = this.guiTop;
-        this.drawTexturedModalRect(x, y, 0, 0, X_SIZE, Y_SIZE);
+        for (int i = 0; i < BOX_PER_PAGE; i++) {
+            mc.getTextureManager().bindTexture(TEXTURE);
 
-        drawTexturedModalRect(x + BUTTON_OK_X, y + BUTTON_OK_Y, BUTTON_OK_U, BUTTON_OK_V, BUTTON_OK_W, BUTTON_OK_H);
-        drawTexturedModalRect(x + BUTTON_CANCEL_X, y + BUTTON_CANCEL_Y, BUTTON_CANCEL_U, BUTTON_CANCEL_V, BUTTON_CANCEL_W, BUTTON_CANCEL_H);
-
-        for (int i=0; i<BOX_PER_PAGE; i++) {
-            mc.getTextureManager().bindTexture(INVENTORY_BACKGROUND);
-
-            GlStateManager.color(1, 1, 1,1 );
+            GlStateManager.color(1, 1, 1, 1);
 
             int index = paramsScrollIndex + i;
             if (index >= parameters.size()) break;
@@ -147,7 +163,7 @@ public class GuiModifyJob extends GuiScreen {
             int bx = x + LIST_X;
             int by = y + LIST_Y + BOX_HEIGHT * i;
             String parameter = parameters.get(index);
-            
+
             if (index == selectedParamIndex) {
                 GlStateManager.color(1, 0, 0, 1);
                 drawTexturedModalRect(bx, by, BOX_U, BOX_V, BOX_WIDTH, BOX_HEIGHT);
@@ -157,16 +173,60 @@ public class GuiModifyJob extends GuiScreen {
                 fontRenderer.drawString(parameter, bx + 5, by + 3, FONT_COLOR);
             }
         }
-        
+
         fontRenderer.drawString("Title", x + 4, y + 5, FONT_COLOR);
+    }
 
-        nameField.drawTextBox();
+    private void saveParameters() {
+        String key = parameters.get(selectedParamIndex);
+        Parameter parameter = job.parameters.getParameterFromKey(key);
 
-        checkboxAnyone.drawCheckbox(mc, mouseX, mouseY);
-        checkboxLaborer.drawCheckbox(mc, mouseX, mouseY);
-        checkboxFarmer.drawCheckbox(mc, mouseX, mouseY);
-        checkboxBuilder.drawCheckbox(mc, mouseX, mouseY);
-        checkboxForester.drawCheckbox(mc, mouseX, mouseY);
+        if (parameter.adapter.getParameterType() == int.class) {
+            GuiWrappedTextField valueField = getElement("param_int_field");
+            job.parameters.setParameterValue(parameter, Integer.parseInt(valueField.getText()));
+        }
+    }
+
+    private void updateParameterProperties() {
+        clearElements();
+
+        addElement("field_name", nameField);
+        addElement("button_ok", buttonOk);
+        addElement("button_ok", buttonCancel);
+        addElement("checkbox_anyone", checkboxAnyone);
+        addElement("checkbox_builder", checkboxBuilder);
+        addElement("checkbox_laborer", checkboxLaborer);
+        addElement("checkbox_farmer", checkboxFarmer);
+        addElement("checkbox_forester", checkboxForester);
+
+        String key = parameters.get(selectedParamIndex);
+        Parameter parameter = job.parameters.getParameterFromKey(key);
+
+        if (parameter.adapter.getParameterType() == int.class) {
+            buildIntParam(parameter, job.parameters.getParameter(key, int.class));
+        } else if (parameter.adapter.getParameterType() == Area.class) {
+            buildAreaParam(parameter, job.parameters.getParameter(key, Area.class));
+        } else if (parameter.adapter.getParameterType() == BlockPos.class) {
+            buildBlockPosParam(parameter, job.parameters.getParameter(key, BlockPos.class));
+        }
+    }
+
+    private void buildIntParam(Parameter parameter, int value) {
+        GuiTextLabel label = new GuiTextLabel(this, PARAM_BOX_X + 2, PARAM_BOX_Y + 2, 100, 10)
+                .setLabel("Value");
+        GuiWrappedTextField valueField = new GuiWrappedTextField(this, PARAM_BOX_Y + 2, PARAM_BOX_Y + 14, 15, 12)
+                .setText(Integer.toString(value));
+
+        addElement("param_int_label", label);
+        addElement("param_int_field", valueField);
+    }
+
+    private void buildAreaParam(Parameter parameter, Area value) {
+
+    }
+
+    private void buildBlockPosParam(Parameter parameter, BlockPos value) {
+
     }
 
     private void setMinionType(MinionType type) {
@@ -230,13 +290,8 @@ public class GuiModifyJob extends GuiScreen {
     }
 
     @Override
-    public boolean doesGuiPauseGame() {
-        return false;
-    }
-
-    @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
-        for (int i=0; i<BOX_PER_PAGE; i++) {
+        for (int i = 0; i < BOX_PER_PAGE; i++) {
             int index = paramsScrollIndex + i;
             if (index >= parameters.size()) break;
 
@@ -245,30 +300,12 @@ public class GuiModifyJob extends GuiScreen {
 
             if (mouseX >= bx && mouseX <= bx + BOX_WIDTH && mouseY >= by && mouseY <= by + BOX_HEIGHT) {
                 selectedParamIndex = i;
+                updateParameterProperties();
                 return;
             }
         }
 
-        if (nameField.mouseClicked(mouseX, mouseY, mouseButton)) {
-            return;
-        }
-
-        if (checkboxAnyone.onMouseClick(mouseX, mouseY, mouseButton)) {
-            setMinionType(MinionType.ANYONE);
-            return;
-        } else if (checkboxLaborer.onMouseClick(mouseX, mouseY, mouseButton)) {
-            setMinionType(MinionType.LABORER);
-            return;
-        } else if (checkboxFarmer.onMouseClick(mouseX, mouseY, mouseButton)) {
-            setMinionType(MinionType.FARMER);
-            return;
-        } else if (checkboxBuilder.onMouseClick(mouseX, mouseY, mouseButton)) {
-            setMinionType(MinionType.BUILDER);
-            return;
-        } else if (checkboxForester.onMouseClick(mouseX, mouseY, mouseButton)) {
-            setMinionType(MinionType.FORESTER);
-            return;
-        }
+        super.mouseClicked(mouseX, mouseY, mouseButton);
     }
 
     @Override
@@ -292,24 +329,14 @@ public class GuiModifyJob extends GuiScreen {
     }
 
     @Override
-    protected void keyTyped(char typedChar, int keyCode) throws IOException {
-        super.keyTyped(typedChar, keyCode);
-
-        if (nameField.textboxKeyTyped(typedChar, keyCode))
-            return;
-    }
-
-    private void playClickSound() {
-        mc.getSoundHandler().playSound(PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1.0F));
-    }
-
-    @Override
     public void onGuiClosed() {
-//        Job temp = new Job(job.uuid, nameField.getText(), job.task, getMinionType(), job.priority, job.parameters);
-//
-//        SUpdateJob packet = new SUpdateJob();
-//        packet.job = temp;
-//
-//        PacketHandler.INSTANCE.sendToServer(packet);
+        saveParameters();
+
+        Job temp = new Job(job.uuid, nameField.getText(), job.task, getMinionType(), job.priority, job.parameters);
+
+        SUpdateJob packet = new SUpdateJob();
+        packet.job = temp;
+
+        PacketHandler.INSTANCE.sendToServer(packet);
     }
 }

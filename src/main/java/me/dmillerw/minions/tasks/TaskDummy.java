@@ -7,8 +7,12 @@ import java.util.UUID;
 
 public class TaskDummy extends TaskDefinition {
 
+    public static final Parameter<Integer> DUMMY = Parameter.newParameter("dummy", Parameter.INT, 0);
+
     public TaskDummy(int i) {
         super("dummy_" + i, "Dummy #" + i);
+
+        addParameter(DUMMY);
     }
 
     @Override

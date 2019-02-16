@@ -5,6 +5,8 @@ import me.dmillerw.minions.client.data.Minion;
 import me.dmillerw.minions.entity.EntityMinion;
 import me.dmillerw.minions.network.PacketHandler;
 import me.dmillerw.minions.network.client.CBatchUpdate;
+import me.dmillerw.minions.tasks.Job;
+import me.dmillerw.minions.world.WorldJobData;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
@@ -37,18 +39,9 @@ public class SRequestBatchUpdate implements IMessage {
                             return minion;
                         })).toArray(Minion[]::new);
 
-//                WorldJobData data = WorldJobData.getJobBoard(ctx.getServerHandler().player.world);
-//                packet.jobs = data.getJobs().stream().map((posting) -> {
-//                    Job job = new Job();
-//
-//                    job.jobId = posting.uuid;
-//                    job.taskId = posting.task.id;
-//                    job.title = "";
-//                    job.status = "";
-//
-//                    return job;
-//                }).toArray(Job[]::new);
-//
+                WorldJobData data = WorldJobData.getJobBoard(ctx.getServerHandler().player.world);
+                packet.jobs = data.getJobs().toArray(new Job[0]);
+
                 PacketHandler.INSTANCE.sendTo(packet, ctx.getServerHandler().player);
             });
             return null;

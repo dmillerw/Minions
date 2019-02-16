@@ -1,6 +1,7 @@
 package me.dmillerw.minions.network.server;
 
 import io.netty.buffer.ByteBuf;
+import me.dmillerw.minions.network.PacketHandler;
 import me.dmillerw.minions.tasks.Job;
 import me.dmillerw.minions.world.WorldJobData;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -25,8 +26,10 @@ public class SUpdateJob implements IMessage {
 
         @Override
         public IMessage onMessage(SUpdateJob message, MessageContext ctx) {
-            WorldJobData data = WorldJobData.getJobBoard(ctx.getServerHandler().player.world);
-            data.addJob(message.job);
+            PacketHandler.addScheduledTask(ctx.netHandler, () -> {
+                WorldJobData data = WorldJobData.getJobBoard(ctx.getServerHandler().player.world);
+                data.addJob(message.job);
+            });
             return null;
         }
     }

@@ -1,24 +1,22 @@
 package me.dmillerw.minions.client.gui;
 
 import me.dmillerw.minions.client.data.ClientSyncHandler;
+import me.dmillerw.minions.client.gui.element.GuiTexturedButton;
+import me.dmillerw.minions.client.gui.element.GuiWrappedTextField;
 import me.dmillerw.minions.lib.ModInfo;
 import me.dmillerw.minions.network.PacketHandler;
 import me.dmillerw.minions.network.server.SUnregisterStateListener;
 import me.dmillerw.minions.tasks.Job;
-import net.minecraft.client.audio.PositionedSoundRecord;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.init.SoundEvents;
 import net.minecraft.util.ResourceLocation;
-import org.lwjgl.input.Mouse;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 import java.util.Arrays;
 
-public class GuiJobList extends GuiScreen {
+public class GuiJobList extends GuiBase {
 
-    private static final ResourceLocation INVENTORY_BACKGROUND = new ResourceLocation(ModInfo.ID, "textures/gui/jobs.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation(ModInfo.ID, "textures/gui/jobs.png");
 
     private static final int X_SIZE = 256;
     private static final int Y_SIZE = 204;
@@ -59,18 +57,26 @@ public class GuiJobList extends GuiScreen {
     private static final int SCROLLBAR_U = 62;
     private static final int SCROLLBAR_V = 204;
 
-    private int guiLeft;
-    private int guiTop;
+    private GuiWrappedTextField searchField;
 
-    private GuiTextField searchField;
+    private GuiTexturedButton addButton;
+    private GuiTexturedButton editButton;
+    private GuiTexturedButton deleteButton;
 
     private Job[] jobs;
+
+    private int hoveredJobIndex = -1;
 
     private int scrollIndex = 0;
     private float scrollProgress = 0;
     private boolean isScrolling = false;
 
     public GuiJobList() {
+        super(TEXTURE);
+
+        this.xSize = X_SIZE;
+        this.ySize = Y_SIZE;
+
         ClientSyncHandler.INSTANCE.requestBatchUpdate();
         ClientSyncHandler.INSTANCE.registerStateListener(this::onUpdate);
     }
@@ -82,50 +88,61 @@ public class GuiJobList extends GuiScreen {
     public void initGui() {
         super.initGui();
 
-        this.guiLeft = (this.width - X_SIZE) / 2;
-        this.guiTop = (this.height - Y_SIZE) / 2;
+        this.searchField = new GuiWrappedTextField(this, 44, 5, 100, 22)
+                .setFocused(true)
+                .setDrawBackground(false)
+                .onTextChange(this::updateSearch);
 
-        this.searchField = new GuiTextField(0, fontRenderer, guiLeft + 44, guiTop + 5, 100, 22);
-        this.searchField.setFocused(true);
-        this.searchField.setEnableBackgroundDrawing(false);
+        addElement(searchField);
+
+        this.addButton = new GuiTexturedButton(this, ADD_BUTTON_X, ADD_BUTTON_Y, ADD_BUTTON_W, ADD_BUTTON_H)
+                .setTooltip("Add Job")
+                .setUVMapper((element) -> Pair.of(ADD_BUTTON_U, ADD_BUTTON_V))
+                .onClick((element) -> addJob());
+
+        this.editButton = new GuiTexturedButton(this, 0, 0, EDIT_BUTTON_W, EDIT_BUTTON_H)
+                .setUVMapper((element) -> Pair.of(EDIT_BUTTON_U, EDIT_BUTTON_V))
+                .onClick((element) -> editJob());
+
+        this.deleteButton = new GuiTexturedButton(this, 0, 0, DELETE_BUTTON_W, DELETE_BUTTON_H)
+                .setUVMapper((element) -> Pair.of(DELETE_BUTTON_U, DELETE_BUTTON_V))
+                .onClick((element) -> deleteJob());
+
+        addElement(addButton);
+        addElement(editButton);
+        addElement(deleteButton);
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        scroll();
+    protected void drawForeground(int mouseX, int mouseY) {
+        int hoveredIndex = -1;
 
-        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-        this.mc.getTextureManager().bindTexture(INVENTORY_BACKGROUND);
-        int x = this.guiLeft;
-        int y = this.guiTop;
-        this.drawTexturedModalRect(x, y, 0, 0, X_SIZE, Y_SIZE);
+        drawTexturedModalRect(guiLeft + SCROLLBAR_X, (int)(guiTop + SCROLLBAR_Y + SCROLLBAR_SPACE_H * scrollProgress), SCROLLBAR_U, SCROLLBAR_V, SCROLLBAR_W, SCROLLBAR_H);
 
-        drawTexturedModalRect(x + ADD_BUTTON_X, y + ADD_BUTTON_Y, ADD_BUTTON_U, ADD_BUTTON_V, ADD_BUTTON_W, ADD_BUTTON_H);
-        drawTexturedModalRect(x + SCROLLBAR_X, (int)(y + SCROLLBAR_Y + SCROLLBAR_SPACE_H * scrollProgress), SCROLLBAR_U, SCROLLBAR_V, SCROLLBAR_W, SCROLLBAR_H);
-
-        fontRenderer.drawString("Search", x + 4, y + 5, 0xff544c3b);
+        fontRenderer.drawString("Search", guiLeft + 4, guiTop + 5, 0xff544c3b);
 
         if (jobs != null) {
             if (jobs.length == 0) {
-                fontRenderer.drawString("You don't have any jobs defined at the moment", x + 4, y + 18, 0xff544c3b);
+                fontRenderer.drawString("You don't have any jobs defined at the moment", guiLeft + 4, guiTop + 18, 0xff544c3b);
             } else {
                 for (int i = 0; i < Math.min(jobs.length, BOX_PER_PAGE); i++) {
-                    int index = scrollIndex + i;
+                    int index = Math.max(0, scrollIndex + i);
                     if (index >= jobs.length)
                         break;
 
                     Job job = jobs[index];
-                    int bx = x + 4;
-                    int by = y + 18 + BOX_HEIGHT * i;
+                    int bx = guiLeft + 4;
+                    int by = guiTop + 18 + BOX_HEIGHT * i;
 
                     GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-                    mc.getTextureManager().bindTexture(INVENTORY_BACKGROUND);
+                    mc.getTextureManager().bindTexture(TEXTURE);
 
                     drawTexturedModalRect(bx, by, BOX_U, BOX_V, BOX_WIDTH, BOX_HEIGHT);
 
                     boolean hovered = false;
 
                     if (mouseX > bx && mouseX < bx + BOX_WIDTH && mouseY > by && mouseY < by + BOX_HEIGHT) {
+                        hoveredIndex = i;
                         hovered = true;
 
                         drawTexturedModalRect(bx + EDIT_BUTTON_X, by + EDIT_BUTTON_Y, EDIT_BUTTON_U, EDIT_BUTTON_V, EDIT_BUTTON_W, EDIT_BUTTON_H);
@@ -152,14 +169,28 @@ public class GuiJobList extends GuiScreen {
             }
         }
 
-        searchField.drawTextBox();
+        hoveredJobIndex = hoveredIndex;
+        updateJobButtons(hoveredJobIndex);
     }
 
-    private void scroll() {
+    private void updateJobButtons(int i) {
+        if (i == -1) {
+            editButton.setActive(false).setVisible(false);
+            deleteButton.setActive(false).setVisible(false);
+        } else {
+            int bx = guiLeft + 4;
+            int by = guiTop + 18 + BOX_HEIGHT * i;
+
+            editButton.setPosition(bx + EDIT_BUTTON_X, by + EDIT_BUTTON_Y).setActive(true).setVisible(true);
+            deleteButton.setPosition(bx + DELETE_BUTTON_X, by + DELETE_BUTTON_Y).setActive(true).setVisible(true);
+        }
+    }
+
+    @Override
+    protected void onMouseScroll(int mouseX, int mouseY, float delta) {
         if (jobs == null) return;
         if (jobs.length <= BOX_PER_PAGE) return;
 
-        float delta = Mouse.getDWheel();
         if (delta == 0) return;
 
         if (delta < 0) scrollIndex++;
@@ -173,11 +204,6 @@ public class GuiJobList extends GuiScreen {
     }
 
     @Override
-    public boolean doesGuiPauseGame() {
-        return false;
-    }
-
-    @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
         int startY = guiTop + SCROLLBAR_Y + (int)(SCROLLBAR_H * scrollProgress);
         int endY = startY + SCROLLBAR_H;
@@ -186,28 +212,7 @@ public class GuiJobList extends GuiScreen {
             return;
         }
 
-        if (searchField.mouseClicked(mouseX, mouseY, mouseButton))
-            return;
-
-        if (mouseX >= guiLeft + ADD_BUTTON_X && mouseX <= guiLeft + ADD_BUTTON_X + ADD_BUTTON_W && mouseY >= guiTop + ADD_BUTTON_Y && mouseY <= guiLeft + ADD_BUTTON_Y + ADD_BUTTON_H) {
-            addJob();
-        } else {
-            for (int i = 0; i < BOX_PER_PAGE; i++) {
-                int index = scrollIndex + i;
-                if (index >= jobs.length)
-                    break;
-
-                Job job = jobs[index];
-                int bx = guiLeft + 4;
-                int by = guiTop + 18 + BOX_HEIGHT * i;
-
-                if (mouseX >= bx + EDIT_BUTTON_X && mouseX <= bx + EDIT_BUTTON_X + EDIT_BUTTON_W && mouseY >= by + EDIT_BUTTON_Y && mouseY <= by + EDIT_BUTTON_Y + EDIT_BUTTON_H) {
-                    editJob(job);
-                } else if (mouseX >= bx + DELETE_BUTTON_X && mouseX <= bx + DELETE_BUTTON_X + DELETE_BUTTON_W && mouseY >= by + DELETE_BUTTON_Y && mouseY <= by + DELETE_BUTTON_Y + DELETE_BUTTON_H) {
-                    deleteJob(job);
-                }
-            }
-        }
+        super.mouseClicked(mouseX, mouseY, mouseButton);
     }
 
     @Override
@@ -225,27 +230,15 @@ public class GuiJobList extends GuiScreen {
 
     @Override
     protected void mouseReleased(int mouseX, int mouseY, int state) {
-        super.mouseReleased(mouseX, mouseY, state);
-
         isScrolling = false;
     }
 
-    @Override
-    protected void keyTyped(char typedChar, int keyCode) throws IOException {
-        super.keyTyped(typedChar, keyCode);
-
-        if (searchField.textboxKeyTyped(typedChar, keyCode)) {
-            updateSearch();
-        }
-    }
-
-    private void updateSearch() {
+    private void updateSearch(String search) {
         if (jobs == null)
             return;
 
         scrollIndex = 0;
 
-        String search = searchField.getText().trim();
         if (search.isEmpty()) {
             this.jobs = ClientSyncHandler.INSTANCE.getJobs();
         } else {
@@ -259,16 +252,15 @@ public class GuiJobList extends GuiScreen {
         mc.displayGuiScreen(new GuiSelectTask());
     }
 
-    private void editJob(Job job) {
-        mc.displayGuiScreen(new GuiModifyJob(job));
+    private void editJob() {
+        if (hoveredJobIndex < 0 || hoveredJobIndex >= jobs.length)
+            return;
+
+        mc.displayGuiScreen(new GuiModifyJob(jobs[hoveredJobIndex]));
     }
 
-    private void deleteJob(Job job) {
+    private void deleteJob() {
 
-    }
-
-    private void playClickSound() {
-        mc.getSoundHandler().playSound(PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1.0F));
     }
 
     @Override

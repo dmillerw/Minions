@@ -12,11 +12,17 @@ import java.util.Objects;
 
 public class Parameter<T> {
 
+    public static final String TYPE_INT = "int";
+    public static final String TYPE_AREA = "area";
+    public static final String TYPE_BLOCKPOS = "blockpos";
+
     public static <T> Parameter<T> newParameter(String id, ParameterAdapter<T> serializer, T defaultValue) {
         return new Parameter<T>(id, serializer, defaultValue, false);
     }
 
     public static abstract class ParameterAdapter<T> {
+
+        public abstract Class getParameterType();
 
         public abstract T readParameterFromBuffer(ByteBuf buffer);
 
@@ -28,6 +34,11 @@ public class Parameter<T> {
     }
 
     public static final ParameterAdapter<Integer> INT = new ParameterAdapter<Integer>() {
+        @Override
+        public Class getParameterType() {
+            return int.class;
+        }
+
         @Override
         public Integer readParameterFromBuffer(ByteBuf buffer) {
             return buffer.readInt();
@@ -51,6 +62,11 @@ public class Parameter<T> {
 
     public static final ParameterAdapter<Area> AREA = new ParameterAdapter<Area>() {
         @Override
+        public Class getParameterType() {
+            return Area.class;
+        }
+
+        @Override
         public Area readParameterFromBuffer(ByteBuf buffer) {
             return Area.fromBuffer(buffer);
         }
@@ -72,6 +88,11 @@ public class Parameter<T> {
     };
 
     public static final ParameterAdapter<BlockPos> BLOCKPOS = new ParameterAdapter<BlockPos>() {
+        @Override
+        public Class getParameterType() {
+            return BlockPos.class;
+        }
+
         @Override
         public BlockPos readParameterFromBuffer(ByteBuf buffer) {
             return BlockPos.fromLong(buffer.readLong());

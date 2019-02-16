@@ -1,24 +1,28 @@
 package me.dmillerw.minions.tasks;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 
 public class ParameterMap {
 
     public static ParameterMap fromBuffer(TaskDefinition task, ByteBuf buffer) {
-        String[] keys = ByteBufUtils.readUTF8String(buffer).split(";");
         ParameterMap map = new ParameterMap(task);
-        Arrays.stream(keys).forEach((key) -> {
+
+        int size = buffer.readInt();
+        for (int i=0; i<size; i++) {
+            String key = ByteBufUtils.readUTF8String(buffer);
             Parameter parameter = task.getParameter(key);
-            map.setParameterValue(parameter, parameter.adapter.readParameterFromBuffer(buffer));
-        });
+            Object value = parameter.adapter.readParameterFromBuffer(buffer);
+            map.setParameterValue(parameter, value);
+
+            System.out.println(FMLCommonHandler.instance().getEffectiveSide() + " Reading to buffer: key => " + key + ", value => " + value);
+        }
 
         return map;
     }
@@ -48,6 +52,14 @@ public class ParameterMap {
         return keyToParameterMap.keySet();
     }
 
+    public Parameter getParameterFromKey(String key) {
+        return keyToParameterMap.get(key);
+    }
+
+    public <T> T getParameter(String key, Class<T> type) {
+        return (T) keyToValueMap.get(key);
+    }
+
     public <T> T getParameter(Parameter<T> parameter) {
         return (T) keyToValueMap.get(parameter.id);
     }
@@ -58,10 +70,14 @@ public class ParameterMap {
     }
 
     public void writeToBuffer(ByteBuf buffer) {
-        ByteBufUtils.writeUTF8String(buffer, Joiner.on(";").join(keyToParameterMap.keySet()));
-        keyToParameterMap.keySet().forEach((key) -> {
+        Set<String> keys = keyToParameterMap.keySet();
+        buffer.writeInt(keys.size());
+        keys.forEach((key) -> {
+            ByteBufUtils.writeUTF8String(buffer, key);
             Parameter parameter = keyToParameterMap.get(key);
             parameter.adapter.writeParameterToBuffer(buffer, keyToValueMap.get(key));
+
+            System.out.println(FMLCommonHandler.instance().getEffectiveSide() + " Writing to buffer: key => " + key + ", value => " + keyToValueMap.get(key));
         });
     }
 

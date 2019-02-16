@@ -8,7 +8,9 @@ import me.dmillerw.minions.network.server.SUnregisterStateListener;
 import me.dmillerw.minions.tasks.Job;
 import me.dmillerw.minions.util.VoidFunction;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.UUID;
 
 public class ClientSyncHandler {
 

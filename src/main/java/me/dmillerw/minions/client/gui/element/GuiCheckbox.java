@@ -1,65 +1,51 @@
 package me.dmillerw.minions.client.gui.element;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.util.ResourceLocation;
+import me.dmillerw.minions.client.gui.GuiBase;
 
-public class GuiCheckbox extends Gui {
+import java.util.function.Consumer;
 
-    public int x;
-    public int y;
-    public int width;
-    public int height;
+public class GuiCheckbox extends GuiElement<GuiCheckbox> {
+
+    private Consumer<GuiCheckbox> clickCallback;
+
     public String label;
     public int labelColor;
     public boolean isChecked;
 
-    private ResourceLocation resourceLocation;
-
-    private int inactiveU;
-    private int inactiveV;
-    private int activeU;
-    private int activeV;
-
-    public GuiCheckbox(int x, int y, int width, int height, String label, int color) {
-        this(x, y, width, height,label, color, false);
+    public GuiCheckbox(GuiBase parentGui, int width, int height) {
+        super(parentGui, width, height);
     }
 
-    public GuiCheckbox(int x, int y, int width, int height, String label, int color, boolean isChecked) {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
+    public GuiCheckbox(GuiBase parentGui, int x, int y, int width, int height, String label, int color) {
+        this(parentGui, x, y, width, height, label, color, false);
+    }
+
+    public GuiCheckbox(GuiBase parentGui, int x, int y, int width, int height, String label, int color, boolean isChecked) {
+        super(parentGui, x, y, width, height);
+
         this.label = label;
         this.labelColor = color;
         this.isChecked = isChecked;
     }
 
-    public GuiCheckbox setResourceLocation(ResourceLocation resourceLocation) {
-        this.resourceLocation = resourceLocation;
+    public GuiCheckbox onClick(Consumer<GuiCheckbox> clickCallback) {
+        this.clickCallback = clickCallback;
         return this;
     }
 
-    public GuiCheckbox setUV(int inactiveU, int inactiveV, int activeU, int activeV) {
-        this.inactiveU = inactiveU;
-        this.inactiveV = inactiveV;
-        this.activeU = activeU;
-        this.activeV = activeV;
-        return this;
+    @Override
+    public void drawElement(int mouseX, int mouseY) {
+        super.drawElement(mouseX, mouseY);
+        drawTexturedElement();
+
+        mc.fontRenderer.drawString(label, xPos + width + 2, yPos + height / 2 - 4, labelColor);
     }
 
-    public void drawCheckbox(Minecraft mc, int mouseX, int mouseY) {
-        mc.getTextureManager().bindTexture(resourceLocation);
-        GlStateManager.color(1, 1, 1, 1);
-        drawTexturedModalRect(x, y, isChecked ? activeU : inactiveU, isChecked ? activeV : inactiveV, width, height);
-        mc.fontRenderer.drawString(label, x + width + 2, y + width / 2 - mc.fontRenderer.FONT_HEIGHT / 2, labelColor);
-    }
-
+    @Override
     public boolean onMouseClick(int mouseX, int mouseY, int mouseButton) {
-        boolean mousein = (mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + width);
-        if (mousein)
-            isChecked = !isChecked;
-        return mousein;
+        boolean inside = super.onMouseClick(mouseX, mouseY, mouseButton);
+        if (inside && clickCallback != null)
+            clickCallback.accept(this);
+        return inside;
     }
 }

@@ -22,7 +22,12 @@ import java.util.UUID;
 public class WorldJobData extends WorldSavedData {
 
     public static WorldJobData getJobBoard(World world) {
-        return (WorldJobData) world.loadData(WorldJobData.class, "jobs");
+        WorldJobData data = (WorldJobData) world.loadData(WorldJobData.class, "jobs");
+        if (data == null) {
+            data = new WorldJobData();
+            world.setData("jobs", data);
+        }
+        return data;
     }
 
     public static void updateJobState(EntityMinion minion, UUID jobUuid, JobState state) {
