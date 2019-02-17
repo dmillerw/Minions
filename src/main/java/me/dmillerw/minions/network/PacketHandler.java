@@ -34,11 +34,12 @@ public class PacketHandler {
     }
 
     public static void initialize() {
-        server(SSetMinionName.class, SSetMinionName.Handler.class);
+        server(SUpdateMinion.class, SUpdateMinion.Handler.class);
         server(SRequestBatchUpdate.class, SRequestBatchUpdate.Handler.class);
         server(SRegisterStateListener.class, SRegisterStateListener.Handler.class);
         server(SUnregisterStateListener.class, SUnregisterStateListener.Handler.class);
         server(SUpdateJob.class, SUpdateJob.Handler.class);
+        server(SDeleteJob.class, SDeleteJob.Handler.class);
 
         client(CBatchUpdate.class, CBatchUpdate.Handler.class);
         client(CStateUpdate.JobUpdate.class, CStateUpdate.JobUpdate.Handler.class);

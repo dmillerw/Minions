@@ -7,11 +7,14 @@ import me.dmillerw.minions.network.server.SRequestBatchUpdate;
 import me.dmillerw.minions.network.server.SUnregisterStateListener;
 import me.dmillerw.minions.tasks.Job;
 import me.dmillerw.minions.util.VoidFunction;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 
+@SideOnly(Side.CLIENT)
 public class ClientSyncHandler {
 
     public static final ClientSyncHandler INSTANCE = new ClientSyncHandler();

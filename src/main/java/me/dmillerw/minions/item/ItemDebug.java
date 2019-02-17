@@ -4,6 +4,7 @@ import me.dmillerw.minions.entity.EntityMinion;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumHand;
@@ -20,13 +21,10 @@ public class ItemDebug extends Item {
     @Override
     public boolean itemInteractionForEntity(ItemStack stack, EntityPlayer playerIn, EntityLivingBase target, EnumHand hand) {
         if (!playerIn.world.isRemote && target instanceof EntityMinion) {
-//            ParameterMap map = new ParameterMap();
-//            map.setParameterValue(TaskCollectItems.HARVEST_AREA, new Area(new BlockPos(0, 5, 0), new BlockPos(16, 16, 16)));
-//            map.setParameterValue(TaskCollectItems.DROPOFF_POINT, new BlockPos(18, 5, 18));
-//
-//            TaskInstance instance = TaskRegistry.getTask(TaskRegistry.COLLECT_ITEMS).createInstance(UUID.randomUUID(), map);
-//
-//            ((EntityMinion) target).taskInstance = instance;
+            if (playerIn.isSneaking()) {
+                ((EntityMinion) target).activeTaskStep = null;
+                target.setItemStackToSlot(EntityEquipmentSlot.MAINHAND, ItemStack.EMPTY);
+            }
         }
 
         return target instanceof EntityMinion;

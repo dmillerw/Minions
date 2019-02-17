@@ -39,8 +39,11 @@ public class Area {
     }
 
     public <T extends Entity> List<T> getEntities(World world, Class<T> type) {
-        BlockPos start = new BlockPos(startPos.getX(), 0, startPos.getZ());
-        return world.getEntitiesWithinAABB(type, new AxisAlignedBB(start, endPos));
+        return world.getEntitiesWithinAABB(type, new AxisAlignedBB(startPos, endPos).expand(1, 1, 1));
+    }
+
+    public Iterable<BlockPos> getBlocksInside() {
+        return BlockPos.getAllInBox(startPos, endPos);
     }
 
     public boolean isEntityInsideOf(Entity entity) {

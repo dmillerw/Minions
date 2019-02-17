@@ -5,9 +5,10 @@ import me.dmillerw.minions.entity.EntityMinion;
 import me.dmillerw.minions.event.EntityEventHandler;
 import me.dmillerw.minions.lib.ModInfo;
 import me.dmillerw.minions.network.PacketHandler;
-import me.dmillerw.minions.tasks.TaskCollectItems;
-import me.dmillerw.minions.tasks.TaskDummy;
+import me.dmillerw.minions.tasks.impl.collectitems.TaskCollectItems;
 import me.dmillerw.minions.tasks.TaskRegistry;
+import me.dmillerw.minions.tasks.impl.collectitems.TaskHarvestFlowers;
+import me.dmillerw.minions.world.WorldTicker;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -22,10 +23,10 @@ public class CommonProxy implements IProxy {
         PacketHandler.initialize();
 
         MinecraftForge.EVENT_BUS.register(EntityEventHandler.class);
+        MinecraftForge.EVENT_BUS.register(WorldTicker.class);
 
         TaskRegistry.registerTask(new TaskCollectItems());
-        for (int i=0; i<10; i++)
-            TaskRegistry.registerTask(new TaskDummy(i));
+        TaskRegistry.registerTask(new TaskHarvestFlowers());
 
         EntityRegistry.registerModEntity(
                 new ResourceLocation(ModInfo.ID, "minion"),

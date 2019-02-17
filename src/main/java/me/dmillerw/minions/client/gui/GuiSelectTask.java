@@ -82,7 +82,7 @@ public class GuiSelectTask extends GuiBase {
                 .setDrawBackground(false)
                 .onTextChange(this::updateSearch);
 
-        addElement(searchField);
+        addElement("field_search", searchField);
 
         this.buttonOk = new GuiTexturedButton(this, BUTTON_OK_X, BUTTON_OK_Y, BUTTON_OK_W, BUTTON_OK_H)
                 .setUVMapper((b) -> selectedIndex == -1
@@ -98,8 +98,8 @@ public class GuiSelectTask extends GuiBase {
                 .setUVMapper((b) -> Pair.of(BUTTON_CANCEL_U, BUTTON_CANCEL_V))
                 .onClick((b) -> mc.displayGuiScreen(new GuiJobList()));
 
-        addElement(buttonOk);
-        addElement(buttonCancel);
+        addElement("button_ok", buttonOk);
+        addElement("button_cancel", buttonCancel);
     }
 
     @Override

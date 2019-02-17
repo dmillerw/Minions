@@ -1,9 +1,9 @@
-package me.dmillerw.minions.tasks;
+package me.dmillerw.minions.tasks.parameter;
 
 import com.google.common.collect.Maps;
 import io.netty.buffer.ByteBuf;
+import me.dmillerw.minions.tasks.TaskDefinition;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 
 import java.util.Map;
@@ -18,10 +18,8 @@ public class ParameterMap {
         for (int i=0; i<size; i++) {
             String key = ByteBufUtils.readUTF8String(buffer);
             Parameter parameter = task.getParameter(key);
-            Object value = parameter.adapter.readParameterFromBuffer(buffer);
-            map.setParameterValue(parameter, value);
-
-            System.out.println(FMLCommonHandler.instance().getEffectiveSide() + " Reading to buffer: key => " + key + ", value => " + value);
+            Object value = parameter.readValueFromBuffer(buffer);
+            map.setValue(parameter, value);
         }
 
         return map;
@@ -31,7 +29,7 @@ public class ParameterMap {
         ParameterMap map = new ParameterMap(task);
         tagCompound.getKeySet().forEach((key) -> {
             Parameter parameter = task.getParameter(key);
-            map.setParameterValue(parameter, parameter.adapter.readParameterFromNbtTag(tagCompound.getTag(key)));
+            map.setValue(parameter, parameter.readValueFromNbt(tagCompound));
         });
 
         return map;
@@ -45,28 +43,24 @@ public class ParameterMap {
     }
 
     private void loadFromTask(TaskDefinition task) {
-        task.getParameters().forEach((parameter -> setParameterValue(parameter, parameter.defaultValue)));
+        task.getParameters().forEach((parameter -> setValue(parameter, parameter.defaultValue)));
     }
 
     public Set<String> getKeys() {
         return keyToParameterMap.keySet();
     }
 
-    public Parameter getParameterFromKey(String key) {
+    public Parameter getParameter(String key) {
         return keyToParameterMap.get(key);
     }
 
-    public <T> T getParameter(String key, Class<T> type) {
-        return (T) keyToValueMap.get(key);
+    public <V> V getValue(Parameter<V> key) {
+        return (V) keyToValueMap.get(key.id);
     }
 
-    public <T> T getParameter(Parameter<T> parameter) {
-        return (T) keyToValueMap.get(parameter.id);
-    }
-
-    public <T> void setParameterValue(Parameter<T> parameter, T value) {
-        keyToParameterMap.put(parameter.id, parameter);
-        keyToValueMap.put(parameter.id, value);
+    public <V> void setValue(Parameter<V> parameter, V value) {
+        this.keyToParameterMap.put(parameter.id, parameter);
+        this.keyToValueMap.put(parameter.id, value);
     }
 
     public void writeToBuffer(ByteBuf buffer) {
@@ -75,16 +69,14 @@ public class ParameterMap {
         keys.forEach((key) -> {
             ByteBufUtils.writeUTF8String(buffer, key);
             Parameter parameter = keyToParameterMap.get(key);
-            parameter.adapter.writeParameterToBuffer(buffer, keyToValueMap.get(key));
-
-            System.out.println(FMLCommonHandler.instance().getEffectiveSide() + " Writing to buffer: key => " + key + ", value => " + keyToValueMap.get(key));
+            parameter.writeValueToBuffer(buffer, keyToValueMap.get(key));
         });
     }
 
     public void writeToNbt(NBTTagCompound tagCompound) {
         keyToParameterMap.keySet().forEach((key) -> {
             Parameter parameter = keyToParameterMap.get(key);
-            tagCompound.setTag(key, parameter.adapter.writeParameterToNbtTag(keyToValueMap.get(key)));
+            parameter.writeValueToNbt(tagCompound, keyToValueMap.get(key));
         });
     }
 }

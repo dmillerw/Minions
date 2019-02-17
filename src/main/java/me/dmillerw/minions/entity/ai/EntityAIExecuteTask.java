@@ -20,7 +20,7 @@ public class EntityAIExecuteTask extends EntityAIBase {
 
     @Override
     public boolean shouldExecute() {
-        return minion.taskInstance != null;
+        return minion.activeTaskStep != null;
     }
 
     @Override
@@ -32,6 +32,6 @@ public class EntityAIExecuteTask extends EntityAIBase {
     public void updateTask() {
         super.updateTask();
 
-        minion.taskInstance.tick(minion, aiHelper);
+        minion.activeTaskStep.tick(minion, aiHelper);
     }
 }

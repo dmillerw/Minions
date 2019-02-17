@@ -31,8 +31,8 @@ public class WorldJobData extends WorldSavedData {
     }
 
     public static void updateJobState(EntityMinion minion, UUID jobUuid, JobState state) {
-        WorldJobData data = getJobBoard(minion.world);
-        data.getJob(jobUuid).updateState(minion, state);
+//        WorldJobData data = getJobBoard(minion.world);
+//        data.getJob(jobUuid).updateState(minion, state);
     }
 
     private final Map<UUID, Job> uuidToJobMap = Maps.newHashMap();
@@ -54,6 +54,20 @@ public class WorldJobData extends WorldSavedData {
             ServerSyncHandler.INSTANCE.updateJob(posting);
         else
             ServerSyncHandler.INSTANCE.addJob(posting);
+    }
+
+    public void deleteJob(UUID targetUuid) {
+        Job job = uuidToJobMap.get(targetUuid);
+        if (job == null)
+            return;
+
+        uuidToJobMap.remove(targetUuid);
+        sortedJobs.clear();
+        sortedJobs.addAll(uuidToJobMap.values());
+
+        sortedJobs.sort(Comparator.comparingInt(p -> p.priority));
+
+        ServerSyncHandler.INSTANCE.removeJob(job);
     }
 
     public Job getJob(UUID uuid) {

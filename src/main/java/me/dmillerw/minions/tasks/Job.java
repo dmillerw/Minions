@@ -2,16 +2,16 @@ package me.dmillerw.minions.tasks;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import io.netty.buffer.ByteBuf;
 import me.dmillerw.minions.entity.EntityMinion;
+import me.dmillerw.minions.tasks.parameter.ParameterMap;
 import me.dmillerw.minions.util.MinionType;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.World;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -19,19 +19,6 @@ import java.util.UUID;
  * It has been created in-world by the player
  */
 public class Job {
-
-    public static Job[] dummyJobs(int count) {
-        List<Job> job = Lists.newArrayList();
-        for (int i=0; i<count; i++) {
-            job.add(dummyJob(i));
-        }
-        return job.toArray(new Job[0]);
-    }
-
-    public static Job dummyJob(int i) {
-        TaskDefinition task = TaskRegistry.getAllTasks().get(0);
-        return new Job(UUID.randomUUID(), "Dummy Job #" + i, task, MinionType.ANYONE, 0, new ParameterMap(task));
-    }
 
     public static Job fromBuffer(ByteBuf buffer) {
         UUID uuid = new UUID(buffer.readLong(), buffer.readLong());
@@ -62,9 +49,8 @@ public class Job {
     public final int priority;
     public final ParameterMap parameters;
 
-    // Map of a minion's uuid, to its state
-    private final Map<UUID, JobState> jobState = Maps.newHashMap();
-    private final Set<UUID> stateListeners = Sets.newHashSet();
+    private TaskState taskState;
+    private Map<UUID, TaskStep> taskSteps = Maps.newHashMap();
 
     public Job(String title, TaskDefinition task, MinionType type, ParameterMap parameters) {
         this(UUID.randomUUID(), title, task, type, 0, parameters);
@@ -77,10 +63,45 @@ public class Job {
         this.type = type;
         this.parameters = parameters;
         this.priority = priority;
+        this.taskState = task.createState(this);
     }
 
-    public void updateState(EntityMinion minion, JobState state) {
-        jobState.put(minion.getUniqueID(), state);
+    public void tick(World world) {
+        Map<UUID, TaskStep> temp = Maps.newHashMap();
+
+        List<UUID> deadSteps = Lists.newArrayList();
+        taskSteps.values().forEach((step) -> {
+            if (!step.shouldDie(world)) {
+                temp.put(step.uuid, step);
+            } else {
+                deadSteps.add(step.uuid);
+            }
+        });
+
+        taskSteps.clear();
+        taskSteps.putAll(temp);
+
+        taskState.tick(world);
+    }
+
+    public boolean canMinionPerform(EntityMinion minion) {
+        return (type == MinionType.ANYONE || type == minion.getMinionType()) && getStep() != null;
+    }
+
+    public TaskStep getStep() {
+        return taskSteps.values().stream().filter((step) -> !step.claimed).findAny().orElse(null);
+    }
+
+    public void addStep(TaskStep step) {
+        this.taskSteps.put(step.uuid, step);
+    }
+
+    public void removeStep(TaskStep step) {
+        this.taskSteps.remove(step.uuid);
+    }
+
+    public void claimStep(TaskStep step, EntityMinion minion) {
+        step.setClaimed(true);
     }
 
     public void writeToBuffer(ByteBuf buffer) {

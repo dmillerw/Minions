@@ -3,13 +3,13 @@ package me.dmillerw.minions.tasks;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import me.dmillerw.minions.tasks.parameter.Parameter;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 public abstract class TaskDefinition {
 
@@ -48,5 +48,5 @@ public abstract class TaskDefinition {
         return icon;
     }
 
-    public abstract TaskInstance createInstance(UUID jobUuid, ParameterMap parameters);
+    public abstract TaskState createState(Job job);
 }

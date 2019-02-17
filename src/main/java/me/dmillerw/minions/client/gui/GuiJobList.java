@@ -5,6 +5,7 @@ import me.dmillerw.minions.client.gui.element.GuiTexturedButton;
 import me.dmillerw.minions.client.gui.element.GuiWrappedTextField;
 import me.dmillerw.minions.lib.ModInfo;
 import me.dmillerw.minions.network.PacketHandler;
+import me.dmillerw.minions.network.server.SDeleteJob;
 import me.dmillerw.minions.network.server.SUnregisterStateListener;
 import me.dmillerw.minions.tasks.Job;
 import net.minecraft.client.renderer.GlStateManager;
@@ -93,7 +94,7 @@ public class GuiJobList extends GuiBase {
                 .setDrawBackground(false)
                 .onTextChange(this::updateSearch);
 
-        addElement(searchField);
+        addElement("field_search", searchField);
 
         this.addButton = new GuiTexturedButton(this, ADD_BUTTON_X, ADD_BUTTON_Y, ADD_BUTTON_W, ADD_BUTTON_H)
                 .setTooltip("Add Job")
@@ -108,9 +109,11 @@ public class GuiJobList extends GuiBase {
                 .setUVMapper((element) -> Pair.of(DELETE_BUTTON_U, DELETE_BUTTON_V))
                 .onClick((element) -> deleteJob());
 
-        addElement(addButton);
-        addElement(editButton);
-        addElement(deleteButton);
+        addElement("button_add", addButton);
+        addElement("button_edit", editButton);
+        addElement("button_delete", deleteButton);
+
+        updateJobButtons(-1);
     }
 
     @Override
@@ -260,7 +263,10 @@ public class GuiJobList extends GuiBase {
     }
 
     private void deleteJob() {
+        if (hoveredJobIndex < 0 || hoveredJobIndex >= jobs.length)
+            return;
 
+        PacketHandler.INSTANCE.sendToServer(new SDeleteJob(jobs[hoveredJobIndex].uuid));
     }
 
     @Override

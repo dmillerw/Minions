@@ -2,7 +2,7 @@ package me.dmillerw.minions.entity;
 
 import me.dmillerw.minions.client.gui.GuiMinion;
 import me.dmillerw.minions.entity.ai.EntityAIExecuteTask;
-import me.dmillerw.minions.tasks.TaskInstance;
+import me.dmillerw.minions.tasks.TaskStep;
 import me.dmillerw.minions.util.MinionType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.EntityLiving;
@@ -30,7 +30,7 @@ public class EntityMinion extends EntityLiving {
     private static final DataParameter<ItemStack> HELD_ITEM = EntityDataManager.createKey(EntityMinion.class, DataSerializers.ITEM_STACK);
     private static final DataParameter<String> TYPE = EntityDataManager.createKey(EntityMinion.class, DataSerializers.STRING);
 
-    public TaskInstance taskInstance;
+    public TaskStep activeTaskStep;
 
     public EntityMinion(World worldIn) {
         super(worldIn);
@@ -55,6 +55,19 @@ public class EntityMinion extends EntityLiving {
     @Override
     public void onEntityUpdate() {
         super.onEntityUpdate();
+
+//        if (!world.isRemote) {
+//            if (activeTaskStep == null) {
+//                WorldJobData data = WorldJobData.getJobBoard(world);
+//                if (!data.getJobs().isEmpty()) {
+//                    Job job = data.getJobs().get(0);
+//                    activeTaskStep = job.getStep();
+//                    if (activeTaskStep != null) {
+//                        activeTaskStep.setClaimed(true);
+//                    }
+//                }
+//            }
+//        }
     }
 
     public ItemStack getHeldItem() {

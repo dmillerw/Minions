@@ -6,9 +6,9 @@ import me.dmillerw.minions.lib.ModInfo;
 import me.dmillerw.minions.network.PacketHandler;
 import me.dmillerw.minions.network.server.SUpdateJob;
 import me.dmillerw.minions.tasks.Job;
-import me.dmillerw.minions.tasks.Parameter;
-import me.dmillerw.minions.tasks.ParameterMap;
 import me.dmillerw.minions.tasks.TaskDefinition;
+import me.dmillerw.minions.tasks.parameter.Parameter;
+import me.dmillerw.minions.tasks.parameter.ParameterMap;
 import me.dmillerw.minions.util.Area;
 import me.dmillerw.minions.util.MinionType;
 import net.minecraft.client.renderer.GlStateManager;
@@ -109,11 +109,24 @@ public class GuiModifyJob extends GuiBase {
 
         this.buttonOk = new GuiTexturedButton(this, BUTTON_OK_X, BUTTON_OK_Y, BUTTON_OK_W, BUTTON_OK_H)
                 .setTooltip("OK")
-                .setUVMapper((b) -> Pair.of(BUTTON_OK_U, BUTTON_OK_V));
+                .setUVMapper((b) -> Pair.of(BUTTON_OK_U, BUTTON_OK_V))
+                .onClick((b) -> {
+                    saveParameters();
+
+                    Job temp = new Job(job.uuid, nameField.getText(), job.task, getMinionType(), job.priority, job.parameters);
+
+                    SUpdateJob packet = new SUpdateJob();
+                    packet.job = temp;
+
+                    PacketHandler.INSTANCE.sendToServer(packet);
+
+                    mc.displayGuiScreen(null);
+                });
 
         this.buttonCancel = new GuiTexturedButton(this, BUTTON_CANCEL_X, BUTTON_CANCEL_Y, BUTTON_CANCEL_W, BUTTON_CANCEL_H)
                 .setTooltip("CANCEL")
-                .setUVMapper((b) -> Pair.of(BUTTON_CANCEL_U, BUTTON_CANCEL_V));
+                .setUVMapper((b) -> Pair.of(BUTTON_CANCEL_U, BUTTON_CANCEL_V))
+                .onClick((b) -> mc.displayGuiScreen(null));
 
         final Pair<Integer, Integer> checkboxInactive = Pair.of(29, 204);
         final Pair<Integer, Integer> checkboxActive = Pair.of(40, 204);
@@ -179,11 +192,40 @@ public class GuiModifyJob extends GuiBase {
 
     private void saveParameters() {
         String key = parameters.get(selectedParamIndex);
-        Parameter parameter = job.parameters.getParameterFromKey(key);
+        Parameter parameter = job.parameters.getParameter(key);
 
-        if (parameter.adapter.getParameterType() == int.class) {
+        if (parameter.type == Parameter.Type.INT) {
             GuiWrappedTextField valueField = getElement("param_int_field");
-            job.parameters.setParameterValue(parameter, Integer.parseInt(valueField.getText()));
+            job.parameters.setValue(parameter, Integer.parseInt(valueField.getText()));
+        } else if (parameter.type == Parameter.Type.AREA) {
+            GuiWrappedTextField sx = getElement("param_area_field_start_x");
+            GuiWrappedTextField sy = getElement("param_area_field_start_y");
+            GuiWrappedTextField sz = getElement("param_area_field_start_z");
+            GuiWrappedTextField ex = getElement("param_area_field_end_x");
+            GuiWrappedTextField ey = getElement("param_area_field_end_y");
+            GuiWrappedTextField ez = getElement("param_area_field_end_z");
+
+            job.parameters.setValue(parameter, new Area(
+                    new BlockPos(
+                            Integer.parseInt(sx.getText()),
+                            Integer.parseInt(sy.getText()),
+                            Integer.parseInt(sz.getText())
+                    ),
+                    new BlockPos(
+                            Integer.parseInt(ex.getText()),
+                            Integer.parseInt(ey.getText()),
+                            Integer.parseInt(ez.getText())
+                    )));
+        } else if (parameter.type == Parameter.Type.BLOCKPOS) {
+            GuiWrappedTextField x = getElement("param_pos_field_x");
+            GuiWrappedTextField y = getElement("param_pos_field_y");
+            GuiWrappedTextField z = getElement("param_pos_field_z");
+
+            job.parameters.setValue(parameter, new BlockPos(
+                    Integer.parseInt(x.getText()),
+                    Integer.parseInt(y.getText()),
+                    Integer.parseInt(z.getText())
+            ));
         }
     }
 
@@ -192,7 +234,7 @@ public class GuiModifyJob extends GuiBase {
 
         addElement("field_name", nameField);
         addElement("button_ok", buttonOk);
-        addElement("button_ok", buttonCancel);
+        addElement("button_cancel", buttonCancel);
         addElement("checkbox_anyone", checkboxAnyone);
         addElement("checkbox_builder", checkboxBuilder);
         addElement("checkbox_laborer", checkboxLaborer);
@@ -200,21 +242,22 @@ public class GuiModifyJob extends GuiBase {
         addElement("checkbox_forester", checkboxForester);
 
         String key = parameters.get(selectedParamIndex);
-        Parameter parameter = job.parameters.getParameterFromKey(key);
+        Parameter parameter = job.parameters.getParameter(key);
+        Object value = job.parameters.getValue(parameter);
 
-        if (parameter.adapter.getParameterType() == int.class) {
-            buildIntParam(parameter, job.parameters.getParameter(key, int.class));
-        } else if (parameter.adapter.getParameterType() == Area.class) {
-            buildAreaParam(parameter, job.parameters.getParameter(key, Area.class));
-        } else if (parameter.adapter.getParameterType() == BlockPos.class) {
-            buildBlockPosParam(parameter, job.parameters.getParameter(key, BlockPos.class));
+        if (parameter.type == Parameter.Type.INT) {
+            buildIntParam(parameter, (Integer) value);
+        } else if (parameter.type == Parameter.Type.AREA) {
+            buildAreaParam(parameter, (Area) value);
+        } else if (parameter.type == Parameter.Type.BLOCKPOS) {
+            buildBlockPosParam(parameter, (BlockPos) value);
         }
     }
 
     private void buildIntParam(Parameter parameter, int value) {
         GuiTextLabel label = new GuiTextLabel(this, PARAM_BOX_X + 2, PARAM_BOX_Y + 2, 100, 10)
                 .setLabel("Value");
-        GuiWrappedTextField valueField = new GuiWrappedTextField(this, PARAM_BOX_Y + 2, PARAM_BOX_Y + 14, 15, 12)
+        GuiWrappedTextField valueField = new GuiWrappedTextField(this, PARAM_BOX_X + 2, PARAM_BOX_Y + 14, 16, 12)
                 .setText(Integer.toString(value));
 
         addElement("param_int_label", label);
@@ -222,11 +265,53 @@ public class GuiModifyJob extends GuiBase {
     }
 
     private void buildAreaParam(Parameter parameter, Area value) {
+        GuiTextLabel labelStart = new GuiTextLabel(this, PARAM_BOX_X + 2, PARAM_BOX_Y + 2, 100, 10)
+                .setLabel("Area - Start");
+        GuiWrappedTextField fieldStartX = new GuiWrappedTextField(this, PARAM_BOX_X + 3, PARAM_BOX_Y + 14, 30, 12)
+                .setText(Integer.toString(value.startPos.getX()));
+        GuiWrappedTextField fieldStartY = new GuiWrappedTextField(this, PARAM_BOX_X + 37, PARAM_BOX_Y + 14, 30, 12)
+                .setText(Integer.toString(value.startPos.getY()));
+        GuiWrappedTextField fieldStartZ = new GuiWrappedTextField(this, PARAM_BOX_X + 71, PARAM_BOX_Y + 14, 30, 12)
+                .setText(Integer.toString(value.startPos.getZ()));
+        GuiTextLabel labelEnd = new GuiTextLabel(this, PARAM_BOX_X + 2, PARAM_BOX_Y + 30, 100, 10)
+                .setLabel("Area - End");
+        GuiWrappedTextField fieldEndX = new GuiWrappedTextField(this, PARAM_BOX_X + 3, PARAM_BOX_Y + 42, 30, 12)
+                .setText(Integer.toString(value.endPos.getX()));
+        GuiWrappedTextField fieldEndY = new GuiWrappedTextField(this, PARAM_BOX_X + 37, PARAM_BOX_Y + 42, 30, 12)
+                .setText(Integer.toString(value.endPos.getY()));
+        GuiWrappedTextField fieldEndZ = new GuiWrappedTextField(this, PARAM_BOX_X + 71, PARAM_BOX_Y + 42, 30, 12)
+                .setText(Integer.toString(value.endPos.getZ()));
+        GuiWrappedButton buttonPlot = new GuiWrappedButton(this, PARAM_BOX_X + 3, PARAM_BOX_Y + 58, 100, 20, "Plot Point")
+                .onClick((button) -> System.out.println("area plot"));
 
+        addElement("param_area_label_start", labelStart);
+        addElement("param_area_field_start_x", fieldStartX);
+        addElement("param_area_field_start_y", fieldStartY);
+        addElement("param_area_field_start_z", fieldStartZ);
+        addElement("param_area_label_end", labelEnd);
+        addElement("param_area_field_end_x", fieldEndX);
+        addElement("param_area_field_end_y", fieldEndY);
+        addElement("param_area_field_end_z", fieldEndZ);
+        addElement("param_area_button_plot", buttonPlot);
     }
 
     private void buildBlockPosParam(Parameter parameter, BlockPos value) {
+        GuiTextLabel label = new GuiTextLabel(this, PARAM_BOX_X + 2, PARAM_BOX_Y + 2, 100, 10)
+                .setLabel("Position");
+        GuiWrappedTextField fieldX = new GuiWrappedTextField(this, PARAM_BOX_X + 3, PARAM_BOX_Y + 14, 30, 12)
+                .setText(Integer.toString(value.getX()));
+        GuiWrappedTextField fieldY = new GuiWrappedTextField(this, PARAM_BOX_X + 37, PARAM_BOX_Y + 14, 30, 12)
+                .setText(Integer.toString(value.getY()));
+        GuiWrappedTextField fieldZ = new GuiWrappedTextField(this, PARAM_BOX_X + 71, PARAM_BOX_Y + 14, 30, 12)
+                .setText(Integer.toString(value.getZ()));
+        GuiWrappedButton buttonPlot = new GuiWrappedButton(this, PARAM_BOX_X + 3, PARAM_BOX_Y + 30, 100, 20, "Plot Point")
+                .onClick((button) -> System.out.println("pos plot"));
 
+        addElement("param_pos_label", label);
+        addElement("param_pos_field_x", fieldX);
+        addElement("param_pos_field_y", fieldY);
+        addElement("param_pos_field_z", fieldZ);
+        addElement("param_pos_button_plot", buttonPlot);
     }
 
     private void setMinionType(MinionType type) {
@@ -299,6 +384,7 @@ public class GuiModifyJob extends GuiBase {
             int by = guiTop + LIST_Y + BOX_HEIGHT * i;
 
             if (mouseX >= bx && mouseX <= bx + BOX_WIDTH && mouseY >= by && mouseY <= by + BOX_HEIGHT) {
+                saveParameters();
                 selectedParamIndex = i;
                 updateParameterProperties();
                 return;
@@ -330,13 +416,6 @@ public class GuiModifyJob extends GuiBase {
 
     @Override
     public void onGuiClosed() {
-        saveParameters();
 
-        Job temp = new Job(job.uuid, nameField.getText(), job.task, getMinionType(), job.priority, job.parameters);
-
-        SUpdateJob packet = new SUpdateJob();
-        packet.job = temp;
-
-        PacketHandler.INSTANCE.sendToServer(packet);
     }
 }
