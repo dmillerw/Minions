@@ -53,6 +53,10 @@ public class ClientSyncHandler {
         return minionMap.values().toArray(new Minion[0]);
     }
 
+    public Job getJob(UUID jobUuid) {
+        return jobMap.get(jobUuid);
+    }
+
     public Job[] getJobs() {
         return jobMap.values().toArray(new Job[0]);
     }

@@ -2,6 +2,7 @@ package me.dmillerw.minions.client.gui;
 
 import com.google.common.collect.Lists;
 import me.dmillerw.minions.client.gui.element.*;
+import me.dmillerw.minions.client.handler.CoordSelectionHandler;
 import me.dmillerw.minions.lib.ModInfo;
 import me.dmillerw.minions.network.PacketHandler;
 import me.dmillerw.minions.network.server.SUpdateJob;
@@ -98,6 +99,23 @@ public class GuiModifyJob extends GuiBase {
         this.job = job;
 
         parameters.addAll(job.parameters.getKeys());
+    }
+
+    public GuiModifyJob(Job job, String property) {
+        super(TEXTURE);
+
+        this.xSize = X_SIZE;
+        this.ySize = Y_SIZE;
+
+        this.job = job;
+
+        parameters.addAll(job.parameters.getKeys());
+
+        for (int i=0; i<parameters.size(); i++) {
+            if (parameters.get(i).equals(property)) {
+                selectedParamIndex = i;
+            }
+        }
     }
 
     public void initGui() {
@@ -282,7 +300,13 @@ public class GuiModifyJob extends GuiBase {
         GuiWrappedTextField fieldEndZ = new GuiWrappedTextField(this, PARAM_BOX_X + 71, PARAM_BOX_Y + 42, 30, 12)
                 .setText(Integer.toString(value.endPos.getZ()));
         GuiWrappedButton buttonPlot = new GuiWrappedButton(this, PARAM_BOX_X + 3, PARAM_BOX_Y + 58, 100, 20, "Plot Point")
-                .onClick((button) -> System.out.println("area plot"));
+                .onClick((button) -> {
+                    mc.displayGuiScreen(null);
+                    CoordSelectionHandler.INSTANCE.startAreaSelection(job.uuid, (uuid, area) -> {
+                        job.parameters.setValue(parameter, area);
+                        mc.displayGuiScreen(new GuiModifyJob(job, parameter.id));
+                    });
+                });
 
         addElement("param_area_label_start", labelStart);
         addElement("param_area_field_start_x", fieldStartX);
@@ -305,7 +329,13 @@ public class GuiModifyJob extends GuiBase {
         GuiWrappedTextField fieldZ = new GuiWrappedTextField(this, PARAM_BOX_X + 71, PARAM_BOX_Y + 14, 30, 12)
                 .setText(Integer.toString(value.getZ()));
         GuiWrappedButton buttonPlot = new GuiWrappedButton(this, PARAM_BOX_X + 3, PARAM_BOX_Y + 30, 100, 20, "Plot Point")
-                .onClick((button) -> System.out.println("pos plot"));
+                .onClick((button) -> {
+                    mc.displayGuiScreen(null);
+                    CoordSelectionHandler.INSTANCE.startBlockPosSelection(job.uuid, (uuid, pos) -> {
+                        job.parameters.setValue(parameter, pos);
+                        mc.displayGuiScreen(new GuiModifyJob(job, parameter.id));
+                    });
+                });
 
         addElement("param_pos_label", label);
         addElement("param_pos_field_x", fieldX);
