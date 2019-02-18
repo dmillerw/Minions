@@ -21,6 +21,8 @@ public class ItemDebug extends Item {
 
         setMaxStackSize(1);
         setCreativeTab(CreativeTabs.MISC);
+
+        setTranslationKey("debug");
     }
 
     @Override

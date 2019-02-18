@@ -23,12 +23,18 @@ public class TaskStepBreakBlock extends TaskStep {
     }
 
     @Override
+    public boolean canPerform(EntityMinion minion) {
+        return minion.aiHelper.canPathTo(target);
+    }
+
+    @Override
     public boolean shouldDie(World world) {
         return world.isAirBlock(target);
     }
 
     @Override
-    public void tick(EntityMinion minion, AIHelper helper) {
+    public void tick(EntityMinion minion) {
+        AIHelper helper = minion.aiHelper;
         if (minion.getPosition().equals(target)) {
             NonNullList<ItemStack> drops = NonNullList.create();
             IBlockState state = minion.world.getBlockState(target);

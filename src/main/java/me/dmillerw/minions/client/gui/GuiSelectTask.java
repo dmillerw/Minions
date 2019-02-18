@@ -90,13 +90,13 @@ public class GuiSelectTask extends GuiBase {
                         : Pair.of(BUTTON_OK_ACTIVE_U, BUTTON_OK_ACTIVE_V))
                 .onClick((b) -> {
                     if (selectedIndex >= 0) {
-                        mc.displayGuiScreen(new GuiModifyJob(tasks.get(selectedIndex)));
+                        Navigation.INSTANCE.push(new GuiModifyJob(tasks.get(selectedIndex)));
                     }
                 });
 
         this.buttonCancel = new GuiTexturedButton(this, BUTTON_CANCEL_X, BUTTON_CANCEL_Y, BUTTON_CANCEL_W, BUTTON_CANCEL_H)
                 .setUVMapper((b) -> Pair.of(BUTTON_CANCEL_U, BUTTON_CANCEL_V))
-                .onClick((b) -> mc.displayGuiScreen(new GuiJobList()));
+                .onClick((b) -> Navigation.INSTANCE.pop());
 
         addElement("button_ok", buttonOk);
         addElement("button_cancel", buttonCancel);

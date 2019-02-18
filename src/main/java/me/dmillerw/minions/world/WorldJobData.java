@@ -13,6 +13,7 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
 import net.minecraft.world.storage.WorldSavedData;
 import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -22,6 +23,8 @@ import java.util.UUID;
 public class WorldJobData extends WorldSavedData {
 
     public static WorldJobData getJobBoard(World world) {
+        int dimension = world.provider.getDimension();
+        world = FMLCommonHandler.instance().getMinecraftServerInstance().getWorld(dimension);
         WorldJobData data = (WorldJobData) world.loadData(WorldJobData.class, "jobs");
         if (data == null) {
             data = new WorldJobData();
@@ -46,7 +49,9 @@ public class WorldJobData extends WorldSavedData {
         boolean modify = uuidToJobMap.containsKey(posting.uuid);
 
         uuidToJobMap.put(posting.uuid, posting);
-        sortedJobs.add(posting);
+
+        sortedJobs.clear();
+        sortedJobs.addAll(uuidToJobMap.values());
 
         sortedJobs.sort(Comparator.comparingInt(p -> p.priority));
 

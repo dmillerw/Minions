@@ -2,6 +2,7 @@ package me.dmillerw.minions.client.gui;
 
 import com.google.common.collect.Lists;
 import me.dmillerw.minions.client.gui.element.*;
+import me.dmillerw.minions.client.gui.modal.GuiModalYesNo;
 import me.dmillerw.minions.client.handler.CoordSelectionHandler;
 import me.dmillerw.minions.lib.ModInfo;
 import me.dmillerw.minions.network.PacketHandler;
@@ -138,13 +139,17 @@ public class GuiModifyJob extends GuiBase {
 
                     PacketHandler.INSTANCE.sendToServer(packet);
 
-                    mc.displayGuiScreen(null);
+                    Navigation.INSTANCE.clear();
                 });
 
         this.buttonCancel = new GuiTexturedButton(this, BUTTON_CANCEL_X, BUTTON_CANCEL_Y, BUTTON_CANCEL_W, BUTTON_CANCEL_H)
                 .setTooltip("CANCEL")
                 .setUVMapper((b) -> Pair.of(BUTTON_CANCEL_U, BUTTON_CANCEL_V))
-                .onClick((b) -> mc.displayGuiScreen(null));
+                .onClick((b) -> Navigation.INSTANCE.push(new GuiModalYesNo("Cancel?", "Canceling will erase any changes you may have made", "No", "Yes"), (bool) -> {
+                    if ((Boolean)bool) {
+                        Navigation.INSTANCE.clear();
+                    }
+                }));
 
         final Pair<Integer, Integer> checkboxInactive = Pair.of(29, 204);
         final Pair<Integer, Integer> checkboxActive = Pair.of(40, 204);

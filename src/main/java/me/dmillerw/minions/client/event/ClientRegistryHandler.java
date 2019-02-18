@@ -22,6 +22,7 @@ public class ClientRegistryHandler {
 
         registerItemModel(ModItems.debug);
         registerItemModel(ModItems.workbook);
+        registerItemModel(ModItems.atlas);
     }
 
     private static void registerItemModel(Item item) {

@@ -3,6 +3,7 @@ package me.dmillerw.minions.client.gui;
 import me.dmillerw.minions.client.data.ClientSyncHandler;
 import me.dmillerw.minions.client.gui.element.GuiTexturedButton;
 import me.dmillerw.minions.client.gui.element.GuiWrappedTextField;
+import me.dmillerw.minions.client.gui.modal.GuiModalYesNo;
 import me.dmillerw.minions.lib.ModInfo;
 import me.dmillerw.minions.network.PacketHandler;
 import me.dmillerw.minions.network.server.SDeleteJob;
@@ -266,7 +267,11 @@ public class GuiJobList extends GuiBase {
         if (hoveredJobIndex < 0 || hoveredJobIndex >= jobs.length)
             return;
 
-        PacketHandler.INSTANCE.sendToServer(new SDeleteJob(jobs[hoveredJobIndex].uuid));
+        Navigation.INSTANCE.push(new GuiModalYesNo("Delete Job?", "Are you sure you want to delete this job? Once deleted, it cannot be recovered!", "No", "Yes"), (bool) -> {
+            if (((Boolean) bool)) {
+                PacketHandler.INSTANCE.sendToServer(new SDeleteJob(jobs[hoveredJobIndex].uuid));
+            }
+        });
     }
 
     @Override

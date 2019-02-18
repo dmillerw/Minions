@@ -24,17 +24,23 @@ public class TaskStepCollectItem extends TaskStep {
     }
 
     @Override
+    public boolean canPerform(EntityMinion minion) {
+        return minion.aiHelper.canPathTo(entityItem.getPosition());
+    }
+
+    @Override
     public boolean shouldDie(World world) {
         return entityItem == null || entityItem.isDead;
     }
 
     @Override
-    public void tick(EntityMinion minion, AIHelper aiHelper) {
+    public void tick(EntityMinion minion) {
+        AIHelper aiHelper = minion.aiHelper;
         ItemStack heldItem = minion.getHeldItem();
 
         if (heldItem.isEmpty()) {
             final BlockPos target = new BlockPos(entityItem);
-            if (minion.getPosition().equals(target)) {
+            if (minion.getPosition().equals(target) || minion.getPosition().distanceSq(target) < 1) {
                 minion.getNavigator().clearPath();
                 minion.setVelocity(0, 0, 0);
 
@@ -46,7 +52,7 @@ public class TaskStepCollectItem extends TaskStep {
                 aiHelper.moveToEntity(entityItem);
             }
         } else {
-            if (minion.getPosition().equals(dropoffPoint)) {
+            if (minion.getPosition().distanceSq(dropoffPoint) <= 1) {
                 minion.getNavigator().clearPath();
                 minion.setVelocity(0, 0, 0);
 

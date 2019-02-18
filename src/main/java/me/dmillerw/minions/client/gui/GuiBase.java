@@ -90,8 +90,7 @@ public class GuiBase extends GuiScreen {
         }
     }
 
-    protected void onMouseScroll(int mouseX, int mouseY, float delta) {
-    }
+    protected void onMouseScroll(int mouseX, int mouseY, float delta) {}
 
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws IOException {
@@ -103,7 +102,23 @@ public class GuiBase extends GuiScreen {
         }
     }
 
+    /* CALLBACKS */
+
+    public void onGuiPaused() {}
+
     /* UTIL */
+
+    protected boolean setGuiDimensions(int xSize, int ySize) {
+        if (xSize != this.xSize || ySize != this.ySize) {
+            this.xSize = xSize;
+            this.ySize = ySize;
+            this.initGui();
+
+            return true;
+        }
+
+        return false;
+    }
 
     protected void clearElements() {
         this.elements.clear();

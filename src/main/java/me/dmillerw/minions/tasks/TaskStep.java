@@ -1,10 +1,11 @@
 package me.dmillerw.minions.tasks;
 
+import com.google.common.collect.Sets;
 import me.dmillerw.minions.entity.EntityMinion;
-import me.dmillerw.minions.entity.ai.AIHelper;
 import net.minecraft.world.World;
 
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -16,6 +17,8 @@ public abstract class TaskStep {
     public final UUID uuid;
     public boolean claimed = false;
 
+    private Set<UUID> minionBlacklist = Sets.newHashSet();
+
     public TaskStep(UUID uuid) {
         this.uuid = uuid;
     }
@@ -24,8 +27,14 @@ public abstract class TaskStep {
         this.claimed = claimed;
     }
 
+    public void blacklist(EntityMinion minion) {
+        minionBlacklist.add(minion.getUniqueID());
+    }
+
+    public abstract boolean canPerform(EntityMinion minion);
+
     public abstract boolean shouldDie(World world);
-    public abstract void tick(EntityMinion entity, AIHelper helper);
+    public abstract void tick(EntityMinion entity);
 
     @Override
     public boolean equals(Object o) {

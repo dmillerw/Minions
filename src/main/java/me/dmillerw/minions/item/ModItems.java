@@ -12,6 +12,7 @@ public class ModItems {
 
     public static final ItemDebug debug = null;
     public static final ItemWorkbook workbook = null;
+    public static final ItemAtlas atlas = null;
 
     @Mod.EventBusSubscriber
     public static class RegistrationHandler {
@@ -20,7 +21,8 @@ public class ModItems {
         public static void addItems(RegistryEvent.Register<Item> event) {
             event.getRegistry().registerAll(
                     new ItemDebug().setRegistryName(ModInfo.ID, "debug"),
-                    new ItemWorkbook().setRegistryName(ModInfo.ID, "workbook")
+                    new ItemWorkbook().setRegistryName(ModInfo.ID, "workbook"),
+                    new ItemAtlas().setRegistryName(ModInfo.ID, "atlas")
             );
         }
     }

@@ -1,6 +1,7 @@
 package me.dmillerw.minions.entity;
 
 import me.dmillerw.minions.client.gui.GuiMinion;
+import me.dmillerw.minions.entity.ai.AIHelper;
 import me.dmillerw.minions.entity.ai.EntityAIExecuteTask;
 import me.dmillerw.minions.tasks.TaskStep;
 import me.dmillerw.minions.util.MinionType;
@@ -30,10 +31,14 @@ public class EntityMinion extends EntityLiving {
     private static final DataParameter<ItemStack> HELD_ITEM = EntityDataManager.createKey(EntityMinion.class, DataSerializers.ITEM_STACK);
     private static final DataParameter<String> TYPE = EntityDataManager.createKey(EntityMinion.class, DataSerializers.STRING);
 
+    public AIHelper aiHelper;
+
     public TaskStep activeTaskStep;
 
     public EntityMinion(World worldIn) {
         super(worldIn);
+
+        this.aiHelper = new AIHelper(this, 0.45F);
     }
 
     @Override
@@ -49,7 +54,7 @@ public class EntityMinion extends EntityLiving {
     protected void initEntityAI() {
         super.initEntityAI();
 
-        this.tasks.addTask(1, new EntityAIExecuteTask(this, 1.2));
+        this.tasks.addTask(1, new EntityAIExecuteTask(this, 0.45));
     }
 
     @Override

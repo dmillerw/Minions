@@ -32,6 +32,9 @@ public class WorldTicker {
         if (!(event.getEntity() instanceof EntityMinion))
             return;
 
+        if (event.getEntity().world.isRemote)
+            return;
+
         EntityMinion minion = (EntityMinion) event.getEntityLiving();
         WorldJobData data = WorldJobData.getJobBoard(minion.world);
 
@@ -42,7 +45,7 @@ public class WorldTicker {
 
             if (job != null) {
                 TaskStep step = job.getStep();
-                if (step != null) {
+                if (step != null && step.canPerform(minion)) {
                     minion.activeTaskStep = step;
                     minion.activeTaskStep.setClaimed(true);
                 }
