@@ -1,0 +1,6 @@
+{
+  "parent": "droids:block/range_extender",
+  "textures": {
+    "layer0": "droids:blocks/blank"
+  }
+}

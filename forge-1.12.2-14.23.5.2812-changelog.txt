@@ -110,7 +110,7 @@ Build 2791:
 		
 		* Minor changes
 		
-		* Faster isValid checks, faster validation/invalidation if the state did
+		* Faster isValid checks, faster validation/invalidation if the progress did
 		not change, expand test mod to include a test for the validation system
 		
 		* remove isValid boolean flag, we can express it with the tick counter
@@ -235,8 +235,8 @@ Build 2772:
 		* Small code cleanup
 	tterrag: fixed visual bug with guislider
 	tterrag:
-		Allow IModel to express itself as a vanilla parent (#5195)
-		* Fix errors caused by fancy missing model being non-vanilla parent
+		Allow IModel to express itself as a vanilla actionProvider (#5195)
+		* Fix errors caused by fancy missing model being non-vanilla actionProvider
 		
 		* Switch instanceof checks to a default IModel method
 		

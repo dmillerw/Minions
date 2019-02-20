@@ -20,8 +20,8 @@ if (System.getenv().BUILD_NUMBER) {
 }
 
 version = "${minecraft_version}-${mod_version}${buildnumber}"
-group = "dmillerw.minions"
-archivesBaseName = "Minions"
+group = "dmillerw.droids"
+archivesBaseName = "Droids"
 
 minecraft {
     runDir = "run"
