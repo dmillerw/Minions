@@ -1,6 +1,7 @@
 package me.dmillerw.droids.common.tile;
 
 import me.dmillerw.droids.api.INetworkComponent;
+import me.dmillerw.droids.api.IPlayerOwned;
 import me.dmillerw.droids.common.mesh.AIMeshNetwork;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
@@ -8,7 +9,7 @@ import net.minecraft.world.World;
 
 import java.util.UUID;
 
-public abstract class TileBaseComponent extends TileCore implements INetworkComponent {
+public abstract class TileBaseComponent extends TileCore implements INetworkComponent, IPlayerOwned {
 
     protected static final String KEY_RANGE = "range";
     protected static final String KEY_CONNECTED = "connected";

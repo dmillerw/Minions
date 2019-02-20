@@ -35,6 +35,12 @@ public class EntityDroid extends EntityLiving {
     public AIHelper aiHelper;
     private Action runningAction;
 
+    public EntityDroid(World world) {
+        super(world);
+
+        this.aiHelper = new AIHelper(this, 0.45F);
+    }
+
     public EntityDroid(World worldIn, EntityPlayer owner) {
         super(worldIn);
 
@@ -46,7 +52,7 @@ public class EntityDroid extends EntityLiving {
     protected void entityInit() {
         super.entityInit();
 
-        dataManager.register(OWNER, Optional.of(owner));
+        dataManager.register(OWNER, owner == null ? Optional.absent() : Optional.of(owner));
         dataManager.register(SKIN, "");
         dataManager.register(HELD_ITEM, ItemStack.EMPTY);
 

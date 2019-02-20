@@ -1,6 +1,7 @@
 package me.dmillerw.droids.common.tile;
 
 import me.dmillerw.droids.api.INetworkComponent;
+import me.dmillerw.droids.api.IPlayerOwned;
 import me.dmillerw.droids.common.Constants;
 import me.dmillerw.droids.common.mesh.AIMeshNetwork;
 import net.minecraft.nbt.NBTTagCompound;
@@ -9,7 +10,7 @@ import net.minecraft.world.World;
 
 import java.util.UUID;
 
-public class TileAIController extends TileCore implements INetworkComponent {
+public class TileAIController extends TileCore implements INetworkComponent, IPlayerOwned {
 
     private UUID owner;
     private AIMeshNetwork network;

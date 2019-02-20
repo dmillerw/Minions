@@ -53,4 +53,9 @@ public abstract class Action {
     protected abstract String getUniqueKey();
 
     public abstract void tick(EntityDroid droid);
+
+    @Override
+    public String toString() {
+        return "{key: " + key + ", droid: " + droid + ", progress: " + progress + ", origin: " + getActionProvider() + "}";
+    }
 }

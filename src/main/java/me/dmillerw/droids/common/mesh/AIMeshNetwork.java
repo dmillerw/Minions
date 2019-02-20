@@ -2,6 +2,7 @@ package me.dmillerw.droids.common.mesh;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import me.dmillerw.droids.api.ClaimedObjects;
 import me.dmillerw.droids.api.IActionProvider;
 import me.dmillerw.droids.api.INetworkComponent;
 import me.dmillerw.droids.api.action.Action;
@@ -39,27 +40,19 @@ public class AIMeshNetwork {
     }
 
     public static AIMeshNetwork getNetwork(INetworkComponent component) {
-        Map<UUID, AIMeshNetwork> networkMap = worldNetworkMap.get(component.getWorld().provider.getDimension());
+        Map<BlockPos, AIMeshNetwork> networkMap = posToNetworkMap.get(component.getWorld().provider.getDimension());
         if (networkMap == null || networkMap.isEmpty())
             return null;
 
-        AIMeshNetwork network = networkMap.values().stream()
-                .filter((n) -> n.coverage.contains(component.getPosition()))
-                .findFirst().orElse(null);
-
-        return network;
+        return networkMap.get(component.getPosition());
     }
 
     public static AIMeshNetwork getNetwork(EntityDroid droid) {
-        Map<UUID, AIMeshNetwork> networkMap = worldNetworkMap.get(droid.world.provider.getDimension());
+        Map<BlockPos, AIMeshNetwork> networkMap = posToNetworkMap.get(droid.getPosition());
         if (networkMap == null || networkMap.isEmpty())
             return null;
 
-        AIMeshNetwork network = networkMap.values().stream()
-                .filter((n) -> n.coverage.contains(droid.getPosition()))
-                .findFirst().orElse(null);
-
-        return network;
+        return networkMap.get(droid.getPosition());
     }
 
     public static void addToNetwork(INetworkComponent component) {
@@ -85,6 +78,7 @@ public class AIMeshNetwork {
     public final UUID gridId;
     private final World world;
     private final TileAIController controller;
+    private final ClaimedObjects claimedObjects;
 
     private Set<BlockPos> coverage = Sets.newHashSet();
 
@@ -93,10 +87,13 @@ public class AIMeshNetwork {
 
     private Map<String, Action> runningActions = Maps.newConcurrentMap();
 
+    private boolean errored = false;
+
     public AIMeshNetwork(TileAIController controller) {
         this.gridId = UUID.randomUUID();
         this.world = controller.getWorld();
         this.controller = controller;
+        this.claimedObjects = new ClaimedObjects(world);
 
         if (!controller.getWorld().isRemote)
             recalculateCoverage();
@@ -119,7 +116,7 @@ public class AIMeshNetwork {
         for (EntityDroid droid : DroidTracker.getAvailableDroids(world)) {
             for (IActionProvider provider : actionProviders.values()) {
                 if (provider.hasAvailableActions()) {
-                    Action action = provider.getNextAction(droid);
+                    Action action = provider.getNextAction(claimedObjects, droid);
                     if (action == null)
                         continue;
 
@@ -150,9 +147,22 @@ public class AIMeshNetwork {
     }
 
     private void recalculateCoverage() {
+        // Remove our current provided coverage from the global network map
+        coverage.forEach((pos) -> posToNetworkMap.get(world.provider.getDimension()).remove(pos));
+
+        // Build up our new coverage map
         Set<BlockPos> tempCoverage = Sets.newHashSet();
         addCoverage(tempCoverage, controller.getPos(), controller.getRange());
         networkComponents.forEach((pos, provider) -> addCoverage(tempCoverage, pos, provider.getRange()));
+
+        // If any blocks within our coverage already exist within the map, mark the network as errored, conflict
+        boolean conflict = tempCoverage.stream().anyMatch((pos) -> posToNetworkMap.containsKey(pos));
+
+        if (conflict) {
+            errored = true;
+            destroyNetwork();
+            return;
+        }
 
         Map<BlockPos, INetworkComponent> componentMap = Maps.newHashMap();
         networkComponents.forEach((pos, provider) -> {
@@ -168,6 +178,12 @@ public class AIMeshNetwork {
 
         coverage.clear();
         coverage.addAll(tempCoverage);
+
+        Map<BlockPos, AIMeshNetwork> networkMap = posToNetworkMap.get(world.provider.getDimension());
+        if (networkMap == null) networkMap = Maps.newHashMap();
+        Map<BlockPos, AIMeshNetwork> finalNetworkMap = networkMap;
+        coverage.forEach((pos) -> finalNetworkMap.put(pos, this));
+        posToNetworkMap.put(world.provider.getDimension(), networkMap);
 
         networkComponents.clear();
 
@@ -197,12 +213,19 @@ public class AIMeshNetwork {
     }
 
     public void destroyNetwork() {
+        coverage.clear();
         networkComponents.values().forEach((component -> component.setNetwork(null)));
+        actionProviders.clear();
+        runningActions.clear();
     }
 
     public void updateAction(Action action) {
-        if (runningActions.containsKey(action.getKey()))
+        if (runningActions.containsKey(action.getKey())) {
             runningActions.put(action.getKey(), action);
+
+            IActionProvider provider = action.getActionProvider();
+            if (provider != null) provider.onActionUpdate(claimedObjects, action);
+        }
     }
 
     private void addCoverage(Set<BlockPos> coverage, BlockPos position, int range) {
@@ -252,5 +275,10 @@ public class AIMeshNetwork {
         recalculateCoverage();
 
         networkComponents.remove(component.getPosition());
+    }
+
+    @Override
+    public String toString() {
+        return "{id: " + gridId + ", components: " + networkComponents.size() + ", providers: " + actionProviders.size() + ", coverage: " + coverage.size() + ", runningActions: " + runningActions.size() + "}";
     }
 }

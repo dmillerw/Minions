@@ -1,11 +1,13 @@
 package me.dmillerw.droids.client.event;
 
 import me.dmillerw.droids.api.INetworkComponent;
+import me.dmillerw.droids.client.network.ClientSyncHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderGlobal;
 import net.minecraft.entity.Entity;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
@@ -16,6 +18,8 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayDeque;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class DebugBoundsRenderer {
 
@@ -23,6 +27,9 @@ public class DebugBoundsRenderer {
         
         public BlockPos start;
         public BlockPos end;
+
+        public AxisAlignedBB aabb;
+
         public boolean connected;
     }
     
@@ -87,21 +94,54 @@ public class DebugBoundsRenderer {
             }
         }
 
+        ClientSyncHandler.INSTANCE.getClaimedBlocks().forEach((pos -> {
+            Box box = new Box();
+            box.start = pos;
+            box.end = pos.add(1, 1, 1);
+            box.connected = false;
+            boxes.add(box);
+        }));
+
+        List<Entity> entities = world.loadedEntityList.stream()
+                .filter(ClientSyncHandler.INSTANCE::isClaimed)
+                .collect(Collectors.toList());
+
+        entities.forEach((e) -> {
+            Box box = new Box();
+            AxisAlignedBB aabb = new AxisAlignedBB(e.getPosition(), e.getPosition().add(1, 1, 1));
+            box.aabb = aabb;
+            boxes.add(box);
+        });
+
         Box renderPair;
         while (boxes.size() > 0) {
             renderPair = boxes.pop();
 
-            RenderGlobal.drawBoundingBox(
-                    renderPair.start.getX(),
-                    renderPair.start.getY(),
-                    renderPair.start.getZ(),
-                    renderPair.end.getX(),
-                    renderPair.end.getY(),
-                    renderPair.end.getZ(),
-                    renderPair.connected ? 0 : 1,
-                    renderPair.connected ? 1 : 0,
-                    0,
-                    1);
+            if (renderPair.aabb != null) {
+                RenderGlobal.drawBoundingBox(
+                        renderPair.aabb.minX,
+                        renderPair.aabb.minY,
+                        renderPair.aabb.minZ,
+                        renderPair.aabb.maxX,
+                        renderPair.aabb.maxY,
+                        renderPair.aabb.maxZ,
+                        renderPair.connected ? 0 : 1,
+                        renderPair.connected ? 1 : 0,
+                        0,
+                        1);
+            } else {
+                RenderGlobal.drawBoundingBox(
+                        renderPair.start.getX(),
+                        renderPair.start.getY(),
+                        renderPair.start.getZ(),
+                        renderPair.end.getX(),
+                        renderPair.end.getY(),
+                        renderPair.end.getZ(),
+                        renderPair.connected ? 0 : 1,
+                        renderPair.connected ? 1 : 0,
+                        0,
+                        1);
+            }
         }
 
 		GlStateManager.enableTexture2D();

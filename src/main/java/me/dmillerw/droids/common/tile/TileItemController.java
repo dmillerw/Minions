@@ -1,5 +1,6 @@
 package me.dmillerw.droids.common.tile;
 
+import me.dmillerw.droids.api.ClaimedObjects;
 import me.dmillerw.droids.api.IActionProvider;
 import me.dmillerw.droids.api.action.Action;
 import me.dmillerw.droids.common.entity.EntityDroid;
@@ -17,7 +18,12 @@ public class TileItemController extends TileBaseComponent implements IActionProv
     }
 
     @Override
-    public Action getNextAction(EntityDroid droid) {
+    public Action getNextAction(ClaimedObjects objects, EntityDroid droid) {
         return null;
+    }
+
+    @Override
+    public void onActionUpdate(ClaimedObjects objects, Action action) {
+
     }
 }

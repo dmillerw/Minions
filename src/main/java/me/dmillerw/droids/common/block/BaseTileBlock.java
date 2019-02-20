@@ -5,7 +5,6 @@ import me.dmillerw.droids.common.tile.TileCore;
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumBlockRenderType;
 import net.minecraft.util.ResourceLocation;
@@ -20,7 +19,7 @@ public abstract class BaseTileBlock extends BlockContainer {
         setHardness(2F);
         setResistance(2F);
 
-        setCreativeTab(CreativeTabs.MISC);
+        setCreativeTab(ModInfo.TAB);
 
         setTranslationKey(name);
         setRegistryName(new ResourceLocation(ModInfo.ID, name));

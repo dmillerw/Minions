@@ -9,7 +9,7 @@ public class ActionSetBlock extends Action {
 
     public static final String KEY = "setblock";
 
-    private BlockPos targetPos;
+    public BlockPos targetPos;
 
     public ActionSetBlock(IActionProvider actionProvider) {
         super(actionProvider);

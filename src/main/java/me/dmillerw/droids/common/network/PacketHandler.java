@@ -1,6 +1,7 @@
 package me.dmillerw.droids.common.network;
 
 import me.dmillerw.droids.common.ModInfo;
+import me.dmillerw.droids.common.network.packets.CClaimDebug;
 import net.minecraft.network.INetHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
@@ -31,6 +32,6 @@ public class PacketHandler {
     }
 
     public static void initialize() {
-
+        client(CClaimDebug.class, CClaimDebug.Handler.class);
     }
 }

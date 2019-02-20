@@ -2,6 +2,7 @@ package me.dmillerw.droids.common.entity.ai;
 
 import me.dmillerw.droids.api.action.Action;
 import me.dmillerw.droids.common.entity.EntityDroid;
+import me.dmillerw.droids.common.item.ItemConfigurator;
 import net.minecraft.entity.ai.EntityAIBase;
 
 public class EntityAIExecuteTask extends EntityAIBase {
@@ -29,6 +30,9 @@ public class EntityAIExecuteTask extends EntityAIBase {
     @Override
     public void updateTask() {
         if (droid.world.isRemote)
+            return;
+
+        if (ItemConfigurator.debugPauseDroidTicks)
             return;
 
         Action action = droid.getAction();
