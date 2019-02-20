@@ -1,6 +1,6 @@
 package me.dmillerw.droids.api;
 
-import me.dmillerw.droids.common.mesh.AIMeshNetwork;
+import me.dmillerw.droids.common.mesh.ActionNetwork;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -11,8 +11,8 @@ public interface INetworkComponent {
 
     public int getRange();
 
-    public AIMeshNetwork getNetwork();
-    public void setNetwork(AIMeshNetwork network);
+    public ActionNetwork getNetwork();
+    public void setNetwork(ActionNetwork network);
 
     /* CLIENT */
 

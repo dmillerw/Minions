@@ -2,7 +2,7 @@ package me.dmillerw.droids.common.tile;
 
 import me.dmillerw.droids.api.INetworkComponent;
 import me.dmillerw.droids.api.IPlayerOwned;
-import me.dmillerw.droids.common.mesh.AIMeshNetwork;
+import me.dmillerw.droids.common.mesh.ActionNetwork;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -15,7 +15,7 @@ public abstract class TileBaseComponent extends TileCore implements INetworkComp
     protected static final String KEY_CONNECTED = "connected";
 
     private UUID owner;
-    protected AIMeshNetwork network;
+    protected ActionNetwork network;
     private int range = 0;
 
     public boolean clientIsNetworkConnected = false;
@@ -23,7 +23,7 @@ public abstract class TileBaseComponent extends TileCore implements INetworkComp
     @Override
     public void onLoad() {
         if (!world.isRemote) {
-            AIMeshNetwork.addToNetwork(this);
+            ActionNetwork.addToNetwork(this);
         }
     }
 
@@ -31,14 +31,14 @@ public abstract class TileBaseComponent extends TileCore implements INetworkComp
     public void onBlockBreak() {
         if (!world.isRemote) {
             this.tileEntityInvalid = true;
-            AIMeshNetwork.removeFromNetwork(this);
+            ActionNetwork.removeFromNetwork(this);
         }
     }
 
     @Override
     public void invalidate() {
         if (!world.isRemote) {
-            AIMeshNetwork.removeFromNetwork(this);
+            ActionNetwork.removeFromNetwork(this);
         }
 
         super.invalidate();
@@ -65,12 +65,12 @@ public abstract class TileBaseComponent extends TileCore implements INetworkComp
     }
 
     @Override
-    public AIMeshNetwork getNetwork() {
+    public ActionNetwork getNetwork() {
         return this.network;
     }
 
     @Override
-    public void setNetwork(AIMeshNetwork network) {
+    public void setNetwork(ActionNetwork network) {
         this.network = network;
 
         markDirtyAndNotify();

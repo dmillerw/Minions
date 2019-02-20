@@ -16,39 +16,39 @@ import net.minecraft.world.World;
 
 import java.util.*;
 
-public class AIMeshNetwork {
+public class ActionNetwork {
 
     private static final int PROCESS_PENDING_PER_TICK = 10;
 
-    private static Map<Integer, Map<UUID, AIMeshNetwork>> worldNetworkMap = Maps.newHashMap();
-    private static Map<Integer, Map<BlockPos, AIMeshNetwork>> posToNetworkMap = Maps.newHashMap();
+    private static Map<Integer, Map<UUID, ActionNetwork>> worldNetworkMap = Maps.newHashMap();
+    private static Map<Integer, Map<BlockPos, ActionNetwork>> posToNetworkMap = Maps.newHashMap();
 
-    public static void registerNetwork(World world, AIMeshNetwork network) {
-        Map<UUID, AIMeshNetwork> networkMap = worldNetworkMap.get(world.provider.getDimension());
+    public static void registerNetwork(World world, ActionNetwork network) {
+        Map<UUID, ActionNetwork> networkMap = worldNetworkMap.get(world.provider.getDimension());
         if (networkMap == null) networkMap = Maps.newHashMap();
         networkMap.put(network.gridId, network);
         worldNetworkMap.put(world.provider.getDimension(), networkMap);
     }
 
-    public static void destroyNetwork(World world, AIMeshNetwork network) {
+    public static void destroyNetwork(World world, ActionNetwork network) {
         network.destroyNetwork();
 
-        Map<UUID, AIMeshNetwork> networkMap = worldNetworkMap.get(world.provider.getDimension());
+        Map<UUID, ActionNetwork> networkMap = worldNetworkMap.get(world.provider.getDimension());
         if (networkMap == null) networkMap = Maps.newHashMap();
         networkMap.remove(network.gridId, network);
         worldNetworkMap.put(world.provider.getDimension(), networkMap);
     }
 
-    public static AIMeshNetwork getNetwork(INetworkComponent component) {
-        Map<BlockPos, AIMeshNetwork> networkMap = posToNetworkMap.get(component.getWorld().provider.getDimension());
+    public static ActionNetwork getNetwork(INetworkComponent component) {
+        Map<BlockPos, ActionNetwork> networkMap = posToNetworkMap.get(component.getWorld().provider.getDimension());
         if (networkMap == null || networkMap.isEmpty())
             return null;
 
         return networkMap.get(component.getPosition());
     }
 
-    public static AIMeshNetwork getNetwork(EntityDroid droid) {
-        Map<BlockPos, AIMeshNetwork> networkMap = posToNetworkMap.get(droid.getPosition());
+    public static ActionNetwork getNetwork(EntityDroid droid) {
+        Map<BlockPos, ActionNetwork> networkMap = posToNetworkMap.get(droid.getPosition());
         if (networkMap == null || networkMap.isEmpty())
             return null;
 
@@ -56,21 +56,21 @@ public class AIMeshNetwork {
     }
 
     public static void addToNetwork(INetworkComponent component) {
-        AIMeshNetwork network = getNetwork(component);
+        ActionNetwork network = getNetwork(component);
         if (network != null) {
             network.registerComponent(component);
         }
     }
 
     public static void removeFromNetwork(INetworkComponent component) {
-        AIMeshNetwork network = component.getNetwork();
+        ActionNetwork network = component.getNetwork();
         if (network != null) {
             network.removeComponent(component);
         }
     }
 
-    public static Collection<AIMeshNetwork> getAllNetworks(World world) {
-        Map<UUID, AIMeshNetwork> map = worldNetworkMap.get(world.provider.getDimension());
+    public static Collection<ActionNetwork> getAllNetworks(World world) {
+        Map<UUID, ActionNetwork> map = worldNetworkMap.get(world.provider.getDimension());
         if (map != null) return map.values();
         return Collections.EMPTY_LIST;
     }
@@ -89,7 +89,7 @@ public class AIMeshNetwork {
 
     private boolean errored = false;
 
-    public AIMeshNetwork(TileAIController controller) {
+    public ActionNetwork(TileAIController controller) {
         this.gridId = UUID.randomUUID();
         this.world = controller.getWorld();
         this.controller = controller;
@@ -100,6 +100,9 @@ public class AIMeshNetwork {
     }
 
     public void tick() {
+        if (errored)
+            return;
+
         Map<String, Action> temp = Maps.newHashMap();
 
         for (Action action : runningActions.values()) {
@@ -147,8 +150,12 @@ public class AIMeshNetwork {
     }
 
     private void recalculateCoverage() {
+        Map<BlockPos, ActionNetwork> worldPosMap = posToNetworkMap.get(world.provider.getDimension());
+        if (worldPosMap == null) worldPosMap = Maps.newHashMap();
+
         // Remove our current provided coverage from the global network map
-        coverage.forEach((pos) -> posToNetworkMap.get(world.provider.getDimension()).remove(pos));
+        if (!errored)
+            coverage.forEach(worldPosMap::remove);
 
         // Build up our new coverage map
         Set<BlockPos> tempCoverage = Sets.newHashSet();
@@ -156,7 +163,7 @@ public class AIMeshNetwork {
         networkComponents.forEach((pos, provider) -> addCoverage(tempCoverage, pos, provider.getRange()));
 
         // If any blocks within our coverage already exist within the map, mark the network as errored, conflict
-        boolean conflict = tempCoverage.stream().anyMatch((pos) -> posToNetworkMap.containsKey(pos));
+        boolean conflict = tempCoverage.stream().anyMatch(worldPosMap::containsKey);
 
         if (conflict) {
             errored = true;
@@ -179,11 +186,9 @@ public class AIMeshNetwork {
         coverage.clear();
         coverage.addAll(tempCoverage);
 
-        Map<BlockPos, AIMeshNetwork> networkMap = posToNetworkMap.get(world.provider.getDimension());
-        if (networkMap == null) networkMap = Maps.newHashMap();
-        Map<BlockPos, AIMeshNetwork> finalNetworkMap = networkMap;
+        Map<BlockPos, ActionNetwork> finalNetworkMap = worldPosMap;
         coverage.forEach((pos) -> finalNetworkMap.put(pos, this));
-        posToNetworkMap.put(world.provider.getDimension(), networkMap);
+        posToNetworkMap.put(world.provider.getDimension(), worldPosMap);
 
         networkComponents.clear();
 
@@ -213,6 +218,9 @@ public class AIMeshNetwork {
     }
 
     public void destroyNetwork() {
+        Map<BlockPos, ActionNetwork> networkMap = posToNetworkMap.get(world.provider.getDimension());
+        coverage.forEach((pos) -> networkMap.remove(pos));
+
         coverage.clear();
         networkComponents.values().forEach((component -> component.setNetwork(null)));
         actionProviders.clear();
@@ -279,6 +287,6 @@ public class AIMeshNetwork {
 
     @Override
     public String toString() {
-        return "{id: " + gridId + ", components: " + networkComponents.size() + ", providers: " + actionProviders.size() + ", coverage: " + coverage.size() + ", runningActions: " + runningActions.size() + "}";
+        return "{id: " + gridId + ", errored: " + errored + ", components: " + networkComponents.size() + ", providers: " + actionProviders.size() + ", coverage: " + coverage.size() + ", runningActions: " + runningActions.size() + "}";
     }
 }

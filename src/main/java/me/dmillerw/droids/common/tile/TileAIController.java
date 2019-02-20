@@ -3,7 +3,7 @@ package me.dmillerw.droids.common.tile;
 import me.dmillerw.droids.api.INetworkComponent;
 import me.dmillerw.droids.api.IPlayerOwned;
 import me.dmillerw.droids.common.Constants;
-import me.dmillerw.droids.common.mesh.AIMeshNetwork;
+import me.dmillerw.droids.common.mesh.ActionNetwork;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -13,20 +13,20 @@ import java.util.UUID;
 public class TileAIController extends TileCore implements INetworkComponent, IPlayerOwned {
 
     private UUID owner;
-    private AIMeshNetwork network;
+    private ActionNetwork network;
 
     @Override
     public void onLoad() {
         if (!world.isRemote) {
-            this.network = new AIMeshNetwork(this);
-            AIMeshNetwork.registerNetwork(world, network);
+            this.network = new ActionNetwork(this);
+            ActionNetwork.registerNetwork(world, network);
         }
     }
 
     @Override
     public void invalidate() {
         if (!world.isRemote) {
-            AIMeshNetwork.destroyNetwork(world, network);
+            ActionNetwork.destroyNetwork(world, network);
         }
 
         super.invalidate();
@@ -52,12 +52,12 @@ public class TileAIController extends TileCore implements INetworkComponent, IPl
     }
 
     @Override
-    public AIMeshNetwork getNetwork() {
+    public ActionNetwork getNetwork() {
         return this.network;
     }
 
     @Override
-    public void setNetwork(AIMeshNetwork network) {}
+    public void setNetwork(ActionNetwork network) {}
 
     @Override
     public boolean debugNetworkConnected() {

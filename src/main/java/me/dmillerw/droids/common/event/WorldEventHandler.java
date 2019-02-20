@@ -3,7 +3,7 @@ package me.dmillerw.droids.common.event;
 import com.google.common.collect.Maps;
 import me.dmillerw.droids.api.action.Action;
 import me.dmillerw.droids.common.helper.DroidTracker;
-import me.dmillerw.droids.common.mesh.AIMeshNetwork;
+import me.dmillerw.droids.common.mesh.ActionNetwork;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
@@ -24,8 +24,8 @@ public class WorldEventHandler {
         if (event.world.isRemote)
             return;
 
-        Collection<AIMeshNetwork> networks = AIMeshNetwork.getAllNetworks(event.world);
-        networks.forEach(AIMeshNetwork::tick);
+        Collection<ActionNetwork> networks = ActionNetwork.getAllNetworks(event.world);
+        networks.forEach(ActionNetwork::tick);
     }
 
     @SubscribeEvent
